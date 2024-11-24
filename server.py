@@ -3,10 +3,7 @@ from slogging import log
 import json
 import os
 
-messages={}
-with open(f'{os.getcwd()}/messages.json', 'r+') as file:
-    messages = json.load(file)
-
+messages = {}
 # Créer une connection TCP/IP
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -22,27 +19,36 @@ while True:
     message=""
     # Wait for a connection
     log('Waiting for a connection...')
+    # Quand la connexion est accepté récupérer le socket dans connection et l'addresse dans client_address
     connection, client_address = sock.accept()
-    print()
     
     try:
         log(f'Connection from {client_address}')
         
-        # Recieve the data in a small chunks and retransmit it
+        # Dans une boucle infin attendre de recevoir des informations du client
         while True:
-            data = connection.recv(16).decode()
+            # Attendre les données du client
+            data = connection.recv(1024).decode()
             log('received "%s"' % data)
+            # Si le client a envoyé des données
             if data:
+                # On renvoit la data au client
                 log('Sending data back to the client')
                 connection.sendall(data.encode())
+                
+                # On enregistre le messages dans le fichier messages.json
                 message += data
+                with open(f'{os.getcwd()}/messages.json', 'r+') as file:
+                    messages:dict = json.load(file)
+                    message_id = int(list(messages['messages'].keys())[-1]) + 1
+                    messages['messages'][str(message_id)] = {'message': message, 'sender_id': 1}
+                    print(messages)
+                    file.seek(0)
+                    json.dump(messages, file, indent=4)
+                    file.truncate()
+            # Si le client se déconecte, on sort de la boucle
             else:
                 log(f'No more data from {client_address}')
-                messages['test'] = message
-                with open(f'{os.getcwd()}/messages.json', 'r+') as file:
-                    file.seek(0)
-                    json.dump(messages, file)
-                    file.truncate()
                 break
         
     finally:

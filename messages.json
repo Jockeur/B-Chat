@@ -1,1 +1,8 @@
-{"test": "pipi"}
+{
+    "messages": {
+        "0": {
+            "message": "",
+            "sender_id": 0
+        }
+    }
+}
