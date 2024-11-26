@@ -11,3 +11,12 @@ def receive_messages(client_socket):
         break
     finally:
       pass
+
+# Pour envoyer les messages, faut mettre sur le Front End maintenant
+def send_messages(client_socket):
+  while True:
+        message = input("Enter your message: ")
+        if message:
+            client_socket.sendall(message.encode('utf-8'))
+        else:
+            break
