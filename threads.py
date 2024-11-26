@@ -4,6 +4,30 @@ import threading
 from utils import *
 from slogging import *
 
+
+# Client Threads
+def send_message(s: socket.socket):
+    while True:
+        try:
+            message = str(SEND_ID) + input()
+            s.sendall(message.encode())
+        except Exception as e:
+            print(f'Error -> {e}')
+            s.close()
+            break
+        
+def receive_message(s: socket.socket):
+    while True:
+        try:
+            message = s.recv(1024).decode()
+            print(message)
+        except Exception as e:
+            print(f'Error -> {e}')
+            s.close()
+            break
+
+
+# Server Threads
 def process_connection(s: socket.socket, client_address: str, data_file: str):
     try:
         log(f'Connection from {client_address}')
@@ -26,7 +50,7 @@ def process_connection(s: socket.socket, client_address: str, data_file: str):
                 # Si cet ID est 1 (FETCH_ID), le client veut récupérer les messages
                 elif data_id == FETCH_ID:
                     # On envoie les messages à l'utilisateur
-                    send_messages(s, f'{os.getcwd()}/messages.json')
+                    pass
                 
                     
             # Si le client se déconecte, on sort de la boucle

@@ -15,9 +15,6 @@ def fetch_messages(s: socket.socket, messages_file):
         file.seek(0)
         json.dump(data, file, indent=4)
         file.truncate()
-        
-def send_message(message: str, s: socket.socket):
-    s.sendall(message.encode())
     
 def print_messages(file):
     messages = {}
@@ -31,15 +28,11 @@ def print_messages(file):
 def register_message(message, file):
     with open(file, 'r+') as f:
         messages:dict = json.load(f)
-        message_id = int(list(messages['messages'].keys())[-1]) + 1
+        try:
+            message_id = int(list(messages['messages'].keys())[-1]) + 1
+        except IndexError:
+            message_id = 0
         messages['messages'][str(message_id)] = {'message': message, 'sender_id': 1}
         f.seek(0)
         json.dump(messages, f, indent=4)
         f.truncate()
-        
-def send_messages(s: socket.socket, file):
-    messages = ""
-    with open(file, 'r') as f:
-        messages = json.dumps(json.load(f))
-        s.sendall(messages.encode())
-        

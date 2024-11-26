@@ -1,32 +1,31 @@
 import sys, socket
-from slogging import log
+import threading
 
+from slogging import log
+from threads import *
 from utils import *
 
 # Créer une connection TCP/IP
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
+server_address = input('Quelle est l\'addresse du serveur ? > ')
+
 # Se connecter au socket sur le port où le serveur écoute
-server_address = (sys.argv[1], 10000)
+server_address = ('127.0.0.1', 10000)
 log('Connecting to %s port %s' % server_address)
 sock.connect(server_address)
 
-## On peut envoyer et recevoir des data grâce à sock.sendall() et sock.recv() respectivement
-## Comme pour le serveur
+# On délegue le travail à deux Threads : Un qui reçoit les messages, l'autre qui les envoie
+receive_thread = threading.Thread(target=receive_message, args=(sock,))
+send_thread = threading.Thread(target=send_message, args=(sock,))
+
 try:
-    messages_file = f'{os.getcwd()}/message_client.json'
-    # On demande les messages au serveur
-    fetch_messages(sock, messages_file)
-    print_messages(messages_file)
-    # Demander le message à l'utilisateur
-    message = str(SEND_ID) + input('> ')
-    log('sending "%s"' % message)
-    # On envoie le message au serveur
-    sock.sendall(message.encode())
-    fetch_messages(sock, messages_file)
+    receive_thread.start()
+    send_thread.start()
 
-
-# Quand tout est fini, fermer la connexion
-finally:
-    log('closing socket')
-    sock.close()
+    receive_thread.join()
+    send_thread.join()
+except Exception as e:
+    print(f'Error -> {e}')
+    
+sock.close()

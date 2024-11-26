@@ -7,7 +7,6 @@ import threading
 from threads import process_connection
 from utils import *
 
-messages = {}
 # Créer une connection TCP/IP
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -20,7 +19,6 @@ sock.bind(server_address)
 sock.listen(1)
 
 while True:
-    message=""
     # Wait for a connection
     log('Waiting for a connection...')
     # Quand la connexion est accepté récupérer le socket dans connection et l'addresse dans client_address
@@ -30,3 +28,5 @@ while True:
     log('Entering thread for ' + str(client_address))
     t_conn = threading.Thread(target=process_connection, args=(connection, client_address, f'{os.getcwd}/messages.json'))
     t_conn.start()
+        
+    
