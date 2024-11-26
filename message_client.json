@@ -1,52 +1,5 @@
 {
     "messages": {
-        "0": {
-            "message": "",
-            "sender_id": 0
-        },
-        "1": {
-            "message": "test",
-            "sender_id": 1
-        },
-        "2": {
-            "message": "ouais",
-            "sender_id": 1
-        },
-        "3": {
-            "message": "Je suis con 2 fois...",
-            "sender_id": 1
-        },
-        "4": {
-            "message": "je test l'envoie encore une fois$",
-            "sender_id": 1
-        },
-        "5": {
-            "message": "test 2",
-            "sender_id": 1
-        },
-        "6": {
-            "message": "test",
-            "sender_id": 1
-        },
-        "7": {
-            "message": "je commence le multithreading",
-            "sender_id": 1
-        },
-        "8": {
-            "message": "test 5324435",
-            "sender_id": 1
-        },
-        "9": {
-            "message": "test avec Client 1",
-            "sender_id": 1
-        },
-        "10": {
-            "message": "test",
-            "sender_id": 1
-        },
-        "11": {
-            "message": "test",
-            "sender_id": 1
-        }
+        
     }
 }
