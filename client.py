@@ -1,6 +1,8 @@
 import sys, socket
 from slogging import log
 
+from utils import *
+
 # Créer une connection TCP/IP
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -12,21 +14,17 @@ sock.connect(server_address)
 ## On peut envoyer et recevoir des data grâce à sock.sendall() et sock.recv() respectivement
 ## Comme pour le serveur
 try:
+    messages_file = f'{os.getcwd()}/message_client.json'
+    # On demande les messages au serveur
+    fetch_messages(sock, messages_file)
+    print_messages(messages_file)
     # Demander le message à l'utilisateur
-    message = input()
+    message = str(SEND_ID) + input('> ')
     log('sending "%s"' % message)
     # On envoie le message au serveur
     sock.sendall(message.encode())
-    
-    # Valeurs permettant de check que le serveur à bien reçu toute les data qu'on lui envoie
-    amount_received = 0
-    amount_expected = len(message.encode())
-    
-    # Tant qu'on a pas reçu ce qu'on a envoyé, on attend de recevoir
-    while amount_received < amount_expected:
-        data = sock.recv(1024)
-        amount_received += len(data)
-        log('received "%s"' % data.decode())
+    fetch_messages(sock, messages_file)
+
 
 # Quand tout est fini, fermer la connexion
 finally:

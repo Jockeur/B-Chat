@@ -3,6 +3,8 @@ from slogging import log
 import json
 import os
 
+from utils import *
+
 messages = {}
 # Créer une connection TCP/IP
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -28,24 +30,24 @@ while True:
         # Dans une boucle infin attendre de recevoir des informations du client
         while True:
             # Attendre les données du client
-            data = connection.recv(1024).decode()
+            data:str = connection.recv(1024).decode()
             log('received "%s"' % data)
             # Si le client a envoyé des données
             if data:
-                # On renvoit la data au client
-                log('Sending data back to the client')
-                connection.sendall(data.encode())
+                # L'id du "paquet" utilisé est le premier caractère de notre message reçu venant du client
+                data_id = int(data[0])
                 
-                # On enregistre le messages dans le fichier messages.json
-                message += data
-                with open(f'{os.getcwd()}/messages.json', 'r+') as file:
-                    messages:dict = json.load(file)
-                    message_id = int(list(messages['messages'].keys())[-1]) + 1
-                    messages['messages'][str(message_id)] = {'message': message, 'sender_id': 1}
-                    print(messages)
-                    file.seek(0)
-                    json.dump(messages, file, indent=4)
-                    file.truncate()
+                # Si cet ID est 0 (SEND_ID), le client nous envoie un message
+                if data_id == SEND_ID:
+                    # On enregistre le messages dans le fichier messages.json
+                    register_message(data[1:], f'{os.getcwd()}/messages.json')
+                    
+                # Si cet ID est 1 (FETCH_ID), le client veut récupérer les messages
+                elif data_id == FETCH_ID:
+                    # On envoie les messages à l'utilisateur
+                    send_messages(connection, f'{os.getcwd()}/messages.json')
+                
+                    
             # Si le client se déconecte, on sort de la boucle
             else:
                 log(f'No more data from {client_address}')
