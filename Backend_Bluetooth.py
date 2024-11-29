@@ -2,6 +2,7 @@ import bluetooth
 
 #Ici on recherche tout les Appareils Bluetooth Environnant
 nearby_devices=bluetooth.discover_devices(duration=15, lookup_names=True, flush_cache=True, lookup_class=True)
+print(f"Appareils Bluetooth trouvés: {nearby_devices}")
 
 #Ici on établi le Socket Bluetooth
 server_sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
@@ -10,6 +11,7 @@ server_sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
 port=bluetooth.PORT_ANY
 server_sock.bind(("",port))
 server_sock.listen(1)
+print(f"En attente de connexion sur le port {port}...")
 
 #Ici on accepte la connection entrante
 print("En attente de connexion...")
@@ -18,6 +20,7 @@ print(f"Connexion accepté de {client_info}")
 
 #Ici on régle la réception de data
 data=client_sock.recv(1024)
+print(f"Données Reçues: {data}")
 
 #Maintenant on va garder l'historique des messages
 historique=[]
