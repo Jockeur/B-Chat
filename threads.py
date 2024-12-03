@@ -32,7 +32,7 @@ def process_connection(s: socket.socket, client_address: str, data_file: str):
     try:
         log(f'Connection from {client_address}')
         
-        # Dans une boucle infin attendre de recevoir des informations du client
+        # Dans une boucle infinie attendre de recevoir des informations du client
         while True:
             # Attendre les données du client
             data:str = s.recv(1024).decode()
@@ -46,6 +46,9 @@ def process_connection(s: socket.socket, client_address: str, data_file: str):
                 if data_id == SEND_ID:
                     # On enregistre le messages dans le fichier messages.json
                     register_message(data[1:], f'{os.getcwd()}/messages.json')
+                    
+                    # Et on le renvoie à tout les autres
+                    
                     
                 # Si cet ID est 1 (FETCH_ID), le client veut récupérer les messages
                 elif data_id == FETCH_ID:
