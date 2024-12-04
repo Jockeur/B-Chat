@@ -1,17 +1,12 @@
 import select
 import socket
 from slogging import log
-import os
-import threading
-
-from threads import process_connection
-from utils import *
 
 HEADER_LENGTH = 10
 class Server():
     def __init__(self):
         # L'addresse et le port de connexion du serveur
-        self.HOST = 'localhost'
+        self.HOST = '0.0.0.0'
         self.PORT = 10000
         
         self.socket: socket.socket
@@ -19,6 +14,7 @@ class Server():
         # La liste de tous les socket_list connectés à notre serveur
         self.socket_list = []
         self.clients = {}
+        self.start()
     
     def start(self):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -68,7 +64,7 @@ class Server():
                     for client in self.clients:
                         # Par contre on le renvoit pas à l'envoyeur ça c'est pas gentil 🥲
                         if client != notified_socket:
-                            client.sendall(username['header'] + username['data'] + message['header'], message['data'])
+                            client.sendall(username['header'] + username['data'] + message['header'] + message['data'])
                             
             # On peut maintenant s'occuper des sockets en erreur (les connards qui se sont déconectés)
             for notified_socket in error_sockets:
