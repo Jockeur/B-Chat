@@ -14,35 +14,29 @@ class Client():
         
         self.socket.connect((IP, PORT))
         self.socket.setblocking(False)
+        print("end of connection")
         self.send_username()
-        self.main()
+        print('username sended')
+        # self.main()
         
         
     def main(self):
         send_thread = Thread(target=self.send_message)
         receive_thread = Thread(target=self.receive_message)
         
-        try:
-            send_thread.start()
-            receive_thread.start()
-        finally:
-            send_thread.join()
-            receive_thread.join()
+        # try:
+        #     receive_thread.start()
+        # finally:
+        #     receive_thread.join()
         
 
-    def send_message(self):
+    def send_message(self, message):
         while True:
-            print(f'{self.i_username} >', end='\r')
-            message = sys.stdin.readline()
-            # Si le message n'es pas vide
-            if message:
-                
-                # On l'encode
-                message = message.encode('utf-8')
-                # On détermine son header (la taille du message en gros)
-                message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
-                # On envoie le tout au serveur
-                self.socket.send(message_header + message)
+            message = message.encode('utf-8')
+            # On détermine son header (la taille du message en gros)
+            message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
+            # On envoie le tout au serveur
+            self.socket.send(message_header + message)
                 
                 
     def receive_message(self):
@@ -92,5 +86,3 @@ class Client():
         username = self.i_username.encode('utf-8')
         username_header = f"{len(username):<{HEADER_LENGTH}}".encode('utf-8')
         self.socket.send(username_header + username)
-        
-Client()
