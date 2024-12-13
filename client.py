@@ -1,12 +1,11 @@
 import sys, socket
 import errno
+from threading import Thread
 
 from slogging import log
-from threads import *
-from utils import *
 
 HEADER_LENGTH = 10
-IP = "192.168.1.101"
+IP = "localhost"
 PORT = 10000
 class Client():
     def __init__(self):
@@ -20,8 +19,8 @@ class Client():
         
         
     def main(self):
-        send_thread = threading.Thread(target=self.send_message)
-        receive_thread = threading.Thread(target=self.receive_message)
+        send_thread = Thread(target=self.send_message)
+        receive_thread = Thread(target=self.receive_message)
         
         try:
             send_thread.start()
@@ -33,7 +32,8 @@ class Client():
 
     def send_message(self):
         while True:
-            message = input(f'{self.i_username} > ')
+            print(f'{self.i_username} >', end='\r')
+            message = sys.stdin.readline()
             # Si le message n'es pas vide
             if message:
                 
@@ -68,7 +68,7 @@ class Client():
                 message_length = int(message_header.decode('utf-8').strip())
                 message = self.socket.recv(message_length).decode('utf-8')
                 
-                print (f'{username} > {message}')
+                print (f'\r{username} > {message}\n{self.i_username} >')
             
             except IOError as e:
                 # This is normal on non blocking connections - when there are no incoming data, error is going to be raised
