@@ -30,8 +30,28 @@ historique=[]
 def save_historique(msg):
         historique.append(msg)
 
+#Ici on initie le dictionnaire en charge du en ligne/hors ligne
+online_status={"status": False}
+
 #Maintenant on définit notre pseudo
 username=input("Écrivez votre Pseudo: ")
+
+#Maintenant on règle la réception de messages et une partie du système en ligne/hors ligne
+def receive_messages():
+        while True:
+                data=client_sock.recv(1024)
+                message=data.decode("utf-8")
+                if message=="heartbeat":
+                        online_status["status"]=True
+                        continue
+                print(f"Données Reçues: {message}")
+                save_historique(message)
+
+#Check on the online system ASAP it ain't working rn
+def check_online_status():
+        while True:
+                online_status["status"]=False
+                time.sleep(1)
 
 #Maintenant on commence l'envoi de message
 def sending_messages():
@@ -67,6 +87,8 @@ def send_typing_indicator():
                         typing_indicator=((username + " is typing...").encode())
                         client_sock.send(typing_indicator)
                 time.sleep(0.5)
+
+
 
 #On commence l'écouteur de clavier
 listener=keyboard.Listener(on_press=on_press, on_release=on_release)
