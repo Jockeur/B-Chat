@@ -1,0 +1,12 @@
+{
+    "messages": {
+        "0": {
+            "message": "test",
+            "sender_id": 1
+        },
+        "1": {
+            "message": "Je test.",
+            "sender_id": 1
+        }
+    }
+}
