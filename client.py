@@ -31,12 +31,11 @@ class Client():
         
 
     def send_message(self, message):
-        while True:
-            message = message.encode('utf-8')
-            # On détermine son header (la taille du message en gros)
-            message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
-            # On envoie le tout au serveur
-            self.socket.send(message_header + message)
+        message = message.encode('utf-8')
+        # On détermine son header (la taille du message en gros)
+        message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
+        # On envoie le tout au serveur
+        self.socket.send(message_header + message)
                 
                 
     def receive_message(self):

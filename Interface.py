@@ -5,7 +5,8 @@ class App:
     def __init__(self):
         #juste les trucs obligatoires
         pyxel.init(256,160,title="BWI-Chat",quit_key=pyxel.KEY_NONE)
-        pyxel.load("ressource.pyxres")
+        pyxel.load("resource.pyxres")
+        pyxel.load("assets.pyxres")
         
         # valeurs:
         self.messages=[]
@@ -108,12 +109,12 @@ class App:
             self.brightTheme=False
             
     def update(self):
-        print("hello")
+        # print("hello")
         self.TypeIn()
         self.ThemeColorChange()
 
     def draw(self):
-        print("oui")
+        # print("oui")
         if self.brightTheme==True:
             pyxel.cls(7)
             self.txtColor=6
