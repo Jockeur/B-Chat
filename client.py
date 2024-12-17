@@ -5,7 +5,7 @@ from threading import Thread
 from slogging import log
 
 HEADER_LENGTH = 10
-IP = "localhost"
+IP = "abc.jockeur.fr"
 PORT = 10000
 class Client():
     def __init__(self):
