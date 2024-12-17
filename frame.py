@@ -130,14 +130,32 @@ class App:
         #     self.tilesetBIG_x=64
         #     self.tilesetBIG_y=0
         #     self.TypingBar=160
-            
-        
-        pyxel.blt(0, pyxel.height - 16, 0, 0, 32, 16, 16)
+        pyxel.cls(7)
         fit = (pyxel.width - 16*2)/16
-        for i in range(floor(fit)):
-            pyxel.blt(16*(i+1), pyxel.height - 16, 0, 16, 32, 16, 16)
-        pyxel.blt(pyxel.width-16, pyxel.height-16, 0, 32, 32, 16, 16)
-        pyxel.text(5,150,self.message, 0)
+        message_len_max = len(self.message)//61
+        if len(self.message) <= 61:
+            pyxel.blt(0, pyxel.height - 16, 0, 0, 32, 16, 16, colkey=0)
+            for i in range(floor(fit)):
+                pyxel.blt(16*(i+1), pyxel.height - 16, 0, 16, 32, 16, 16, colkey=0)
+            pyxel.blt(pyxel.width-16, pyxel.height-16, 0, 32, 32, 16, 16, colkey=0)
+            pyxel.text(5,150,self.message, 7)
+            
+        elif len(self.message) <= 122:
+            pyxel.blt(0, pyxel.height-32, 0, 0, 0, 16, 32, colkey=0)
+            for i in range(floor(fit)):
+                pyxel.blt(16*(i+1), pyxel.height - 32, 0, 16, 0, 16, 32, colkey=0)
+            pyxel.blt(pyxel.width-16, pyxel.height - 32, 0, 32, 0, 16, 32, colkey=0)
+            for i in range(floor(len(self.message)/2)):
+                pyxel.text(5, pyxel.height - 26 + 12*i, self.message[i*62:(i+1)*62], 7)
+                
+        elif len(self.message)//61 >= 3:
+            pyxel.blt(0, pyxel.height-16*message_len_max, 0, 0, 0, 16, 32, colkey=0)
+            for i in range(floor(fit)):
+                pyxel.blt(16*(i+1), pyxel.height-16*message_len_max, 0, 16, 0, 16, 16, colkey=0)
+            for i in range(floor(len(self.message)/2)):
+                pyxel.text(5, pyxel.height - 26 + 12*i, self.message[i*62:(i+1)*62], 7)
+            
+            
         # for m in range(len(self.messages)):
         #     if len(self.messages[m])<=14:
         #         pyxel.blt(192,111,0,self.tilesetSmol_x,self.tilesetSmol_y,64,32)
