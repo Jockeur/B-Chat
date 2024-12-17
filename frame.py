@@ -131,29 +131,53 @@ class App:
         #     self.tilesetBIG_y=0
         #     self.TypingBar=160
         pyxel.cls(7)
+        
+        # Le nombre de cases pleines que l'on pourra mettre entre les borne d'une boite pour écrire
         fit = (pyxel.width - 16*2)/16
+        
+        # Le nombre de ligne dont on a besoin pour afficher notre message en entier (-1)
         message_len_max = len(self.message)//61
-        if len(self.message) <= 61:
+        
+        if message_len_max == 0:
             pyxel.blt(0, pyxel.height - 16, 0, 0, 32, 16, 16, colkey=0)
             for i in range(floor(fit)):
                 pyxel.blt(16*(i+1), pyxel.height - 16, 0, 16, 32, 16, 16, colkey=0)
             pyxel.blt(pyxel.width-16, pyxel.height-16, 0, 32, 32, 16, 16, colkey=0)
-            pyxel.text(5,150,self.message, 7)
+            pyxel.text(5,pyxel.height-10,self.message, 7)
             
-        elif len(self.message) <= 122:
+        elif message_len_max == 1:
             pyxel.blt(0, pyxel.height-32, 0, 0, 0, 16, 32, colkey=0)
             for i in range(floor(fit)):
                 pyxel.blt(16*(i+1), pyxel.height - 32, 0, 16, 0, 16, 32, colkey=0)
             pyxel.blt(pyxel.width-16, pyxel.height - 32, 0, 32, 0, 16, 32, colkey=0)
-            for i in range(floor(len(self.message)/2)):
-                pyxel.text(5, pyxel.height - 26 + 12*i, self.message[i*62:(i+1)*62], 7)
+            for i in range(message_len_max+1):
+                pyxel.text(5, pyxel.height - 16*(message_len_max-i+1) + 6, self.message[i*61:(i+1)*61], 7)
                 
-        elif len(self.message)//61 >= 3:
-            pyxel.blt(0, pyxel.height-16*message_len_max, 0, 0, 0, 16, 32, colkey=0)
+        elif message_len_max >= 2:
+            # up-lef corner
+            pyxel.blt(0, pyxel.height-(16*(message_len_max+1)), 0, 0, 0, 16, 16, colkey=0)
+            # up-right corner
+            pyxel.blt(pyxel.width - 16, pyxel.height-(16*(message_len_max+1)), 0, 32, 0, 16, 16, colkey=0)
+            # Fill the upper box
             for i in range(floor(fit)):
-                pyxel.blt(16*(i+1), pyxel.height-16*message_len_max, 0, 16, 0, 16, 16, colkey=0)
-            for i in range(floor(len(self.message)/2)):
-                pyxel.text(5, pyxel.height - 26 + 12*i, self.message[i*62:(i+1)*62], 7)
+                pyxel.blt(16*(i+1), pyxel.height-16*(message_len_max+1), 0, 16, 0, 16, 16, colkey=0)
+            
+            # Fille the middle lines
+            for j in range(message_len_max-1):
+                for i in range(floor(pyxel.width/16)):
+                    pyxel.blt(i*16, pyxel.height-16*(j+2), 0, 16, 0, 16, 16, colkey=0)
+                    
+            # bottom-lef corner
+            pyxel.blt(0, pyxel.height - 16, 0, 0, 16, 16, 16, colkey=0)
+            # bottom-right corner
+            pyxel.blt(pyxel.width - 16, pyxel.height - 16, 0, 32, 16, 16, 16, colkey=0)
+            # Fill the lower box
+            for i in range(floor(fit)):
+                pyxel.blt(16*(i+1), pyxel.height - 16, 0, 16, 16, 16, 16, colkey=0)
+            
+            # Write the message in the box
+            for i in range(message_len_max+1):
+                pyxel.text(5, pyxel.height - 16*(message_len_max-i+1) + 6, self.message[i*61:(i+1)*61], 7)
             
             
         # for m in range(len(self.messages)):
