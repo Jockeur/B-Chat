@@ -1,6 +1,6 @@
 import pyxel
 from client import Client
-from math import floor
+from math import floor, ceil
 
 class App:
     def __init__(self):
@@ -9,6 +9,7 @@ class App:
         pyxel.load("assets.pyxres")
         
         # valeurs:
+        self.font = pyxel.Font('assets/umplus_j10r.bdf')
         self.messages=[]
         self.message=""
         self.m_offset={}
@@ -96,11 +97,7 @@ class App:
             # Stocker et envoyer le message
             self.messages.append(self.message)
             self.message=""
-            if len(self.message)<=14:
-                self.m_offset[len(list(self.m_offset.keys()))+1]=33
-            if len(self.message)>14:
-                self.m_offset[len(list(self.m_offset.keys()))+1]=65
-                
+            
     def ThemeColorChange(self):
         if pyxel.btnp(pyxel.KEY_B) and pyxel.btn(pyxel.KEY_CTRL):
             self.brightTheme=True
@@ -112,25 +109,24 @@ class App:
         #self.ThemeColorChange()
 
     def draw(self):
-        # Désolé mais pour l'instant j'en ai un peu rien à faire du mode sombre
-        
-        # if self.brightTheme==True:
-        #     pyxel.cls(7)
-        #     self.txtColor=6
-        #     self.tilesetSmol_x=0
-        #     self.tilesetSmol_y=32
-        #     self.tilesetBIG_x=64
-        #     self.tilesetBIG_y=64
-        #     self.TypingBar=176
-        # else:
-        #     pyxel.cls(0)
-        #     self.txtColor=1
-        #     self.tilesetSmol_x=0
-        #     self.tilesetSmol_y=0
-        #     self.tilesetBIG_x=64
-        #     self.tilesetBIG_y=0
-        #     self.TypingBar=160
         pyxel.cls(7)
+        for i in range(len(self.messages)):
+            # On peut mettre 43 caractères sur une ligne de la bulle
+            max_ligne_bulle = len(self.messages[i])//41
+            if max_ligne_bulle == 0:
+                # Ajouter la gauche de la bulle
+                pyxel.blt(0, pyxel.height - 32*(len(self.messages)-i), 0, 0, 32, 16, 16, colkey=0)
+                # Ajouter autant de bulle pleine qu'il faut pour chaque ligne
+                for j in range(floor((len(self.messages[i])-3)//3.5)):
+                    pyxel.blt(16 + 16*j, pyxel.height - 32*(len(self.messages)-i), 0, 16, 32, 16, 16, colkey=0)
+                lettres_restantes = floor(len(self.messages[i])-3.5*floor(len(self.messages[i])/3.5))
+                
+                # Calcul farfelu pour ajouter la fin de la bulle au bon endroit et que ça ne fasse pas un gros pâté déguelasse
+                pyxel.blt(ceil((len(self.messages[i])-3)//3.5)*16 + ceil(16*(floor((lettres_restantes/3.5)*100))/100), pyxel.height - 32 * (len(self.messages)-i) + 3, 0, 32, 32, 16, 16, colkey=0)
+                
+                    
+            pyxel.text(5, pyxel.height - 32*(len(self.messages)-i) + 6, self.messages[i], 0)
+            
         
         # Le nombre de cases pleines que l'on pourra mettre entre les borne d'une boite pour écrire
         fit = (pyxel.width - 16*2)/16
@@ -162,12 +158,12 @@ class App:
             for i in range(floor(fit)):
                 pyxel.blt(16*(i+1), pyxel.height-16*(message_len_max+1), 0, 16, 0, 16, 16, colkey=0)
             
-            # Fille the middle lines
+            # Fill the middle lines
             for j in range(message_len_max-1):
                 for i in range(floor(pyxel.width/16)):
                     pyxel.blt(i*16, pyxel.height-16*(j+2), 0, 16, 0, 16, 16, colkey=0)
                     
-            # bottom-lef corner
+            # bottom-left corner
             pyxel.blt(0, pyxel.height - 16, 0, 0, 16, 16, 16, colkey=0)
             # bottom-right corner
             pyxel.blt(pyxel.width - 16, pyxel.height - 16, 0, 32, 16, 16, 16, colkey=0)
