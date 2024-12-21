@@ -114,14 +114,14 @@ class App:
         
         for i in range(len(self.messages)):
             # On peut mettre 43 caractères sur une ligne de la bulle
-            max_ligne_bulle = self.ligne_message(i)
+            max_line_bulle = self.line_message(i)
             
             # Calcul de la distance par rapport au bas de l'écran et des autres bulles
             y_bulles = 0
             for j in range(len(self.messages[i:])):
-                y_bulles += 19 * (self.ligne_message(i+j)+1)
+                y_bulles += 19 * (self.line_message(i+j)+1)
             
-            if max_ligne_bulle == 0:
+            if max_line_bulle == 0:
                 # Ajouter la gauche de la bulle
                 pyxel.blt(0, pyxel.height - 19 - y_bulles + 3, 0, 0, 32, 16, 16, colkey=0)
                 
@@ -138,7 +138,7 @@ class App:
             
             
             # Le message prend 2 lignes
-            if max_ligne_bulle == 1:
+            if max_line_bulle == 1:
                 # Ajouter la gauche de la double bulle
                 pyxel.blt(0, pyxel.height - 19 - y_bulles + 3, 0, 0, 0, 16, 32, colkey=0)
                 
@@ -148,7 +148,7 @@ class App:
                 
                 pyxel.blt(32 + 16*j, pyxel.height - 19 - y_bulles + 3, 0, 32, 0, 16, 32, colkey=0)
                 
-                for j in range(max_ligne_bulle+1):
+                for j in range(max_line_bulle+1):
                     pyxel.text(5, pyxel.height - 19 - y_bulles + j*16 + 8, self.messages[i][j*41:(j+1)*41], 0)
                       
         
@@ -209,7 +209,7 @@ class App:
             for i in range(message_len_max+1):
                 pyxel.text(5, pyxel.height - 16*(message_len_max-i+1) + 6, self.message[i*61:(i+1)*61], 7)
                 
-    def ligne_message(self, index: int):
+    def line_message(self, index: int):
         return len(self.messages[index])//41
         
                 
