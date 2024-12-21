@@ -11,16 +11,14 @@ class App:
         # valeurs:
         self.messages=[]
         self.message=""
-        self.m_offset={}
         self.typingOn=False
         self.brightTheme=True
-        self.up_right=(0,0)
         self.LETTER_timer = 0
-        #self.line=""
         
         # Partie logique
-        self.client = Client()
+        self.client = Client(self)
         
+        print("Tu lances pyxel ?")
         pyxel.run(self.update,self.draw)
     
     # On check chaque entrée, on la process, si c'est un caractère spécial on l'ajoute
@@ -103,6 +101,9 @@ class App:
         if pyxel.btnp(pyxel.KEY_D) and pyxel.btn(pyxel.KEY_CTRL):
             self.brightTheme=False
             
+    def register_message(self, message: str):
+        self.messages.append(message)
+            
     def update(self):
         self.TypeIn()
         #self.ThemeColorChange()
@@ -138,7 +139,6 @@ class App:
             
             # Le message prend 2 lignes
             if max_ligne_bulle == 1:
-                print(y_bulles)
                 # Ajouter la gauche de la double bulle
                 pyxel.blt(0, pyxel.height - 19 - y_bulles + 3, 0, 0, 0, 16, 32, colkey=0)
                 

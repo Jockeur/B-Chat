@@ -1,5 +1,6 @@
 import sys, socket
 import errno
+
 from threading import Thread
 
 from slogging import log
@@ -8,36 +9,23 @@ HEADER_LENGTH = 10
 IP = "abc.jockeur.fr"
 PORT = 10000
 class Client():
-    def __init__(self):
+    def __init__(self, app):
         self.i_username = input('Quel est votre pseudo > ')
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.app = app
         
         self.socket.connect((IP, PORT))
         self.socket.setblocking(False)
         print("end of connection")
         self.send_username()
         print('username sended')
-        # self.main()
+        self.main()
         
         
     def main(self):
-        send_thread = Thread(target=self.send_message)
         receive_thread = Thread(target=self.receive_message)
+        receive_thread.start()
         
-        # try:
-        #     receive_thread.start()
-        # finally:
-        #     receive_thread.join()
-        
-
-    def send_message(self, message):
-        message = message.encode('utf-8')
-        # On détermine son header (la taille du message en gros)
-        message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
-        # On envoie le tout au serveur
-        self.socket.send(message_header + message)
-                
-                
     def receive_message(self):
         while True:                
             try:
@@ -61,7 +49,7 @@ class Client():
                 message_length = int(message_header.decode('utf-8').strip())
                 message = self.socket.recv(message_length).decode('utf-8')
                 
-                print (f'\r{username} > {message}\n{self.i_username} >')
+                self.app.register_message(message)
             
             except IOError as e:
                 # This is normal on non blocking connections - when there are no incoming data, error is going to be raised
@@ -78,8 +66,14 @@ class Client():
             except Exception as e:
                 # Il s'est passé autre chose, STOP !
                 print('Reading error : {}'.format(str(e)))
-                sys.exit()
-    
+                sys.exit()    
+
+    def send_message(self, message):
+        message = message.encode('utf-8')
+        # On détermine son header (la taille du message en gros)
+        message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
+        # On envoie le tout au serveur
+        self.socket.send(message_header + message)
         
     def send_username(self):
         username = self.i_username.encode('utf-8')
