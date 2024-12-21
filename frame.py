@@ -115,42 +115,41 @@ class App:
             # On peut mettre 43 caractères sur une ligne de la bulle
             max_ligne_bulle = self.ligne_message(i)
             
-            if i+1 <= len(self.messages) - 1:
-                max_line_next = self.ligne_message(i+1) + 1
-            else:
-                max_line_next = 1
-            
-            print(max_line_next)
+            # Calcul de la distance par rapport au bas de l'écran et des autres bulles
+            y_bulles = 0
+            for j in range(len(self.messages[i:])):
+                y_bulles += 19 * (self.ligne_message(i+j)+1)
             
             if max_ligne_bulle == 0:
                 # Ajouter la gauche de la bulle
-                pyxel.blt(0, pyxel.height - 16 - (16*max_ligne_bulle) - (16*max_line_next)*(len(self.messages)-i), 0, 0, 32, 16, 16, colkey=0)
+                pyxel.blt(0, pyxel.height - 19 - y_bulles + 3, 0, 0, 32, 16, 16, colkey=0)
                 
                 # Ajouter autant de bulle pleine qu'il faut pour couvrir tous les caractères
                 for j in range(floor((len(self.messages[i])-3)//3.5)):
-                    pyxel.blt(16 + 16*j, pyxel.height - 16 - (16*max_ligne_bulle) - (16*max_line_next)*(len(self.messages)-i), 0, 16, 32, 16, 16, colkey=0)
+                    pyxel.blt(16 + 16*j, pyxel.height - 19 - y_bulles + 3, 0, 16, 32, 16, 16, colkey=0)
                 
                 lettres_restantes = floor(len(self.messages[i])-3.5*floor(len(self.messages[i])/3.5))
                 
                 # Calcul farfelu pour ajouter la fin de la bulle au bon endroit et que ça ne fasse pas un gros pâté déguelasse
-                pyxel.blt(ceil((len(self.messages[i])-3)//3.5)*16 + ceil(16*(floor((lettres_restantes/3.5)*100))/100), pyxel.height - 16 - (16*max_ligne_bulle) - (16*max_line_next) * (len(self.messages)-i), 0, 32, 32, 16, 16, colkey=0)
+                pyxel.blt(ceil((len(self.messages[i])-3)//3.5)*16 + ceil(16*(floor((lettres_restantes/3.5)*100))/100), pyxel.height - 19 - y_bulles + 3, 0, 32, 32, 16, 16, colkey=0)
                 
-                pyxel.text(5, pyxel.height - 16 - (16*max_ligne_bulle) - (16*max_line_next)*(len(self.messages)-i) + 6, self.messages[i], 0)
+                pyxel.text(5, pyxel.height - 19 - y_bulles + 8, self.messages[i], 0)
             
             
             # Le message prend 2 lignes
             if max_ligne_bulle == 1:
+                print(y_bulles)
                 # Ajouter la gauche de la double bulle
-                pyxel.blt(0, pyxel.height - 16 - (16*max_line_next) *(len(self.messages)-i), 0, 0, 0, 16, 32, colkey=0)
+                pyxel.blt(0, pyxel.height - 19 - y_bulles + 3, 0, 0, 0, 16, 32, colkey=0)
                 
                 # Ajouter autant de double bulle pleine qu'il faut pour chaque caractères
                 for j in range(9):
-                    pyxel.blt(16 + 16*j, pyxel.height - 16 - (16*max_ligne_bulle) - (16*max_line_next)*(len(self.messages)-i), 0, 16, 0, 16, 32, colkey=0)
+                    pyxel.blt(16 + 16*j, pyxel.height - 19 - y_bulles + 3, 0, 16, 0, 16, 32, colkey=0)
                 
-                pyxel.blt(32 + 16*j, pyxel.height - 16 - (16*max_ligne_bulle) - (16*max_line_next)*(len(self.messages)-i), 0, 32, 0, 16, 32, colkey=0)
+                pyxel.blt(32 + 16*j, pyxel.height - 19 - y_bulles + 3, 0, 32, 0, 16, 32, colkey=0)
                 
                 for j in range(max_ligne_bulle+1):
-                    pyxel.text(5, pyxel.height - 16 - (16*max_ligne_bulle) - (16*max_line_next)*(len(self.messages)-i) + 10*j + 6, self.messages[i][j*41:(j+1)*41], 0)
+                    pyxel.text(5, pyxel.height - 19 - y_bulles + j*16 + 8, self.messages[i][j*41:(j+1)*41], 0)
                       
         
         # Le nombre de cases pleines que l'on pourra mettre entre les borne d'une boite pour écrire
