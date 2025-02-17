@@ -1,12 +1,26 @@
 {
-    "messages": {
-        "0": {
-            "message": "test",
-            "sender_id": 1
-        },
-        "1": {
-            "message": "Je test.",
-            "sender_id": 1
-        }
-    }
+  "0": {
+    "sender": "Personne marchant innocemment",
+    "message": "Le lobotomisateur"
+  },
+  "1": {
+    "sender": "Personne marchant innocemment",
+    "message": "\"NAN S'IL TE PLAIT NE ME LOBO...\""
+  },
+  "2": {
+    "sender": "Personne marchant innocemment",
+    "message": "\"Schtrabutsugululinganguliguli\""
+  },
+  "3": {
+    "sender": "Le lobotomisateur",
+    "message": "TROP TARD !"
+  },
+  "4": {
+    "sender": "Le lobotomisateur",
+    "message": "J'aime les pates"
+  },
+  "5": {
+    "sender": "Masterming",
+    "message": "Je suis le mastermind"
+  }
 }

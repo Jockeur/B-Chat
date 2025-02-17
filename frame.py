@@ -1,4 +1,6 @@
+import os
 import pyxel
+import json
 from client import Client
 from math import floor, ceil
 
@@ -9,7 +11,8 @@ class App:
         pyxel.load("assets.pyxres")
         
         # valeurs:
-        self.messages=[]
+        # message : {"1": {sender": "Jockeur", "message": "Le message de Jockeur"}}
+        self.messages={}
         self.message=""
         self.typingOn=False
         self.brightTheme=True
@@ -17,6 +20,8 @@ class App:
         
         # Partie logique
         self.client = Client(self)
+        
+        self.username = self.client.i_username
         
         print("Tu lances pyxel ?")
         pyxel.run(self.update,self.draw)
@@ -27,7 +32,6 @@ class App:
         #     self.typingOn=True
         # if pyxel.btnp(pyxel.KEY_ESCAPE) and self.typingOn==True:
         #     self.typingOn=False
-            
         # if self.typingOn==True:
         for k in range(pyxel.KEY_0, pyxel.KEY_9+1):
             if pyxel.btnp(k) and pyxel.btn(pyxel.KEY_SHIFT):
@@ -92,7 +96,8 @@ class App:
             self.client.send_message(self.message)
             
             # Stocker et envoyer le message
-            self.messages.append(self.message)
+            self.messages[str(len(self.messages))] = {"sender": self.username, "message": self.message}
+            self.save_messages()
             self.message=""
             
     def ThemeColorChange(self):
@@ -101,8 +106,15 @@ class App:
         if pyxel.btnp(pyxel.KEY_D) and pyxel.btn(pyxel.KEY_CTRL):
             self.brightTheme=False
             
-    def register_message(self, message: str):
-        self.messages.append(message)
+    def register_message(self, username: str, message: str):
+        self.messages[str(len(list(self.messages.values())))] = {"sender": username, "message": message}
+        self.save_messages()
+        
+    def save_messages(self):
+        with open(f'{os.getcwd()}/messages.json', 'r+') as file:
+                    file.seek(0)
+                    json.dump(self.messages, file, indent=2)
+                    file.truncate()
             
     def update(self):
         self.TypeIn()
@@ -116,41 +128,48 @@ class App:
             # On peut mettre 43 caractères sur une ligne de la bulle
             max_line_bulle = self.line_message(i)
             
+            sender = 1 if self.messages[str(i)]["sender"] == self.username else 0
+            
             # Calcul de la distance par rapport au bas de l'écran et des autres bulles
             y_bulles = 0
-            for j in range(len(self.messages[i:])):
+            for j in range(len(list(self.messages.values())[i:])):
                 y_bulles += 19 * (self.line_message(i+j)+1)
             
             if max_line_bulle == 0:
                 # Ajouter la gauche de la bulle
-                pyxel.blt(0, pyxel.height - 19 - y_bulles + 3, 0, 0, 32, 16, 16, colkey=0)
+                pyxel.blt(sender*(pyxel.width - 16*2 - 16*int(round((len(self.messages[str(i)]["message"])-3)//3.5))), pyxel.height - 19 - y_bulles + 3, sender, 0, 32, 16, 16, colkey=0)
                 
                 # Ajouter autant de bulle pleine qu'il faut pour couvrir tous les caractères
-                for j in range(floor((len(self.messages[i])-3)//3.5)):
-                    pyxel.blt(16 + 16*j, pyxel.height - 19 - y_bulles + 3, 0, 16, 32, 16, 16, colkey=0)
+                for j in range(int(round((len(self.messages[str(i)]["message"])-3)//3.5))):
+                    x = 16 + 16*j if sender == 0 else pyxel.width - 16*2 - 16*j
+                    pyxel.blt(x, pyxel.height - 19 - y_bulles + 3, sender, 16, 32, 16, 16, colkey=0)
                 
-                lettres_restantes = floor(len(self.messages[i])-3.5*floor(len(self.messages[i])/3.5))
+                lettres_restantes = int(round(len(self.messages[str(i)]["message"])-3.5*round(len(self.messages[str(i)]["message"])/3.5)))
                 
                 # Calcul farfelu pour ajouter la fin de la bulle au bon endroit et que ça ne fasse pas un gros pâté déguelasse
-                pyxel.blt(ceil((len(self.messages[i])-3)//3.5)*16 + ceil(16*(floor((lettres_restantes/3.5)*100))/100), pyxel.height - 19 - y_bulles + 3, 0, 32, 32, 16, 16, colkey=0)
+                x=ceil((len(self.messages[str(i)]["message"])-3)//3.5)*16 + ceil(16*(int(round((lettres_restantes/3.5)*100)))/100) if sender == 0 else pyxel.width - 16
+                pyxel.blt(x, pyxel.height - 19 - y_bulles + 3, sender, 32, 32, 16, 16, colkey=0)
                 
-                pyxel.text(5, pyxel.height - 19 - y_bulles + 8, self.messages[i], 0)
+                x=5 if sender == 0 else pyxel.width -16 - round(3.5 * len(self.messages[str(i)]["message"]))
+                pyxel.text(x, pyxel.height - 19 - y_bulles + 8, self.messages[str(i)]["message"], 0)
             
             
             # Le message prend 2 lignes
             if max_line_bulle == 1:
                 # Ajouter la gauche de la double bulle
-                pyxel.blt(0, pyxel.height - 19 - y_bulles + 3, 0, 0, 0, 16, 32, colkey=0)
+                pyxel.blt(0, pyxel.height - 19 - y_bulles + 3, sender, 0, 0, 16, 32, colkey=0)
                 
                 # Ajouter autant de double bulle pleine qu'il faut pour chaque caractères
                 for j in range(9):
-                    pyxel.blt(16 + 16*j, pyxel.height - 19 - y_bulles + 3, 0, 16, 0, 16, 32, colkey=0)
+                    pyxel.blt(16 + 16*j, pyxel.height - 19 - y_bulles + 3, sender, 16, 0, 16, 32, colkey=0)
                 
-                pyxel.blt(32 + 16*j, pyxel.height - 19 - y_bulles + 3, 0, 32, 0, 16, 32, colkey=0)
+                pyxel.blt(32 + 16*j, pyxel.height - 19 - y_bulles + 3, sender, 32, 0, 16, 32, colkey=0)
                 
                 for j in range(max_line_bulle+1):
-                    pyxel.text(5, pyxel.height - 19 - y_bulles + j*16 + 8, self.messages[i][j*41:(j+1)*41], 0)
+                    pyxel.text(5, pyxel.height - 19 - y_bulles + j*16 + 8, self.messages[str(i)]["message"][j*41:(j+1)*41], 0)
                       
+        
+        ## Affichage de la barre d'écriture
         
         # Le nombre de cases pleines que l'on pourra mettre entre les borne d'une boite pour écrire
         fit = (pyxel.width - 16*2)/16
@@ -159,58 +178,58 @@ class App:
         message_len_max = len(self.message)//61
         
         if message_len_max == 0:
-            pyxel.blt(0, pyxel.height - 16, 0, 0, 32, 16, 16, colkey=0)
+            pyxel.blt(0, pyxel.height - 16, 0, 1, 32, 16, 16, colkey=0)
             
             for i in range(floor(fit)):
-                pyxel.blt(16*(i+1), pyxel.height - 16, 0, 16, 32, 16, 16, colkey=0)
+                pyxel.blt(16*(i+1), pyxel.height - 16, 1, 16, 32, 16, 16, colkey=0)
                 
-            pyxel.blt(pyxel.width-16, pyxel.height-16, 0, 32, 32, 16, 16, colkey=0)
+            pyxel.blt(pyxel.width-16, pyxel.height-16, 1, 32, 32, 16, 16, colkey=0)
             
             pyxel.text(5,pyxel.height-10,self.message, 7)
             
         elif message_len_max == 1:
-            pyxel.blt(0, pyxel.height-32, 0, 0, 0, 16, 32, colkey=0)
+            pyxel.blt(0, pyxel.height-32, 1, 0, 0, 16, 32, colkey=0)
             
             for i in range(floor(fit)):
-                pyxel.blt(16*(i+1), pyxel.height - 32, 0, 16, 0, 16, 32, colkey=0)
+                pyxel.blt(16*(i+1), pyxel.height - 32, 1, 16, 0, 16, 32, colkey=0)
                 
-            pyxel.blt(pyxel.width-16, pyxel.height - 32, 0, 32, 0, 16, 32, colkey=0)
+            pyxel.blt(pyxel.width-16, pyxel.height - 32, 1, 32, 0, 16, 32, colkey=0)
             
             for i in range(message_len_max+1):
                 pyxel.text(5, pyxel.height - 16*(message_len_max-i+1) + 6, self.message[i*61:(i+1)*61], 7)
                 
         elif message_len_max >= 2:
             # up-lef corner
-            pyxel.blt(0, pyxel.height-(16*(message_len_max+1)), 0, 0, 0, 16, 16, colkey=0)
+            pyxel.blt(0, pyxel.height-(16*(message_len_max+1)), 1, 0, 0, 16, 16, colkey=0)
             
             # up-right corner
-            pyxel.blt(pyxel.width - 16, pyxel.height-(16*(message_len_max+1)), 0, 32, 0, 16, 16, colkey=0)
+            pyxel.blt(pyxel.width - 16, pyxel.height-(16*(message_len_max+1)), 1, 32, 0, 16, 16, colkey=0)
             
             # Fill the upper box
             for i in range(floor(fit)):
-                pyxel.blt(16*(i+1), pyxel.height-16*(message_len_max+1), 0, 16, 0, 16, 16, colkey=0)
+                pyxel.blt(16*(i+1), pyxel.height-16*(message_len_max+1), 1, 16, 0, 16, 16, colkey=0)
             
             # Fill the middle lines
             for j in range(message_len_max-1):
                 for i in range(floor(pyxel.width/16)):
-                    pyxel.blt(i*16, pyxel.height-16*(j+2), 0, 16, 0, 16, 16, colkey=0)
+                    pyxel.blt(i*16, pyxel.height-16*(j+2), 1, 16, 0, 16, 16, colkey=0)
                     
             # bottom-left corner
-            pyxel.blt(0, pyxel.height - 16, 0, 0, 16, 16, 16, colkey=0)
+            pyxel.blt(0, pyxel.height - 16, 1, 0, 16, 16, 16, colkey=0)
             
             # bottom-right corner
-            pyxel.blt(pyxel.width - 16, pyxel.height - 16, 0, 32, 16, 16, 16, colkey=0)
+            pyxel.blt(pyxel.width - 16, pyxel.height - 16, 1, 32, 16, 16, 16, colkey=0)
             
             # Fill the lower box
             for i in range(floor(fit)):
-                pyxel.blt(16*(i+1), pyxel.height - 16, 0, 16, 16, 16, 16, colkey=0)
+                pyxel.blt(16*(i+1), pyxel.height - 16, 1, 16, 16, 16, 16, colkey=0)
             
             # Write the message in the box
             for i in range(message_len_max+1):
                 pyxel.text(5, pyxel.height - 16*(message_len_max-i+1) + 6, self.message[i*61:(i+1)*61], 7)
                 
     def line_message(self, index: int):
-        return len(self.messages[index])//41
+        return len(self.messages[str(index)]["message"])//41
         
                 
 App()
