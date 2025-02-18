@@ -28,7 +28,7 @@ class Client():
         
     def receive_message(self):
         '''Une boucle vérifiant que l'utilisateur est toujours connecté et enregistre un message si jamais il en a reçu un'''
-        while True:                
+        while self.app.running:
             try:
                 # On essaye de voir si on reçoit un message
                 # Nos messages commencerons toujours par le header du pseudo de notre envoyeur
