@@ -45,20 +45,20 @@ class Server():
                     
                     # On ajoute notre client à notre clien_list
                     self.clients[client_socket] = username
-                    log(f'Connection acceptée venant de {client_address[0]}:{client_address[1]}, nom {username['data'].decode('utf-8')}')
+                    log(f"Connection acceptée venant de {client_address[0]}:{client_address[1]}, nom {username['data'].decode('utf-8')}")
                 # Si le socket n'est pas le serveur, alors qq'un essaye de nous envoyer un message
                 else:
                     message = self.receive_message(notified_socket)
                     # On vérifie d'abord que le client ne s'est pas déconnecté
                     if message == False:
-                        print(f'Connection fermée de {self.clients[notified_socket]['data'].decode('utf-8')}')
+                        print(f"Connection fermée de {self.clients[notified_socket]['data'].decode('utf-8')}")
                         self.socket_list.remove(notified_socket)
                         del self.clients[notified_socket]
                         
                         continue
                     
                     username = self.clients[notified_socket]
-                    print(f'Message reçu de {username['data'].decode('utf-8')}: {message['data'].decode('utf-8').strip()}')
+                    print(f"Message reçu de {username['data'].decode('utf-8')}: {message['data'].decode('utf-8').strip()}")
                     
                     # Le renvoyer à tout le monde parce qu'on est gentil et qu'on aime partager les choses 🥰 (j'vais cabler frr)
                     for client in self.clients:
