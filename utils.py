@@ -7,13 +7,15 @@ SENDING_MESSAGE = 1
 
 '''Fonctions communes au server et au client'''
 def receive_op_id(s: socket.socket):
-        op_header = s.recv(HEADER_LENGTH)
+        try:
+            op_header = s.recv(HEADER_LENGTH)
 
-        if not len(op_header):
+            if not len(op_header):
+                return False
+                
+            return int(op_header.decode('utf-8').strip())
+        except ConnectionResetError:
             return False
-            
-        return int(op_header.decode('utf-8').strip())
-        
 
 def get_message(s: socket.socket):
         try:
