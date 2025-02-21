@@ -6,6 +6,9 @@ from threading import Thread
 from slogging import log
 
 HEADER_LENGTH = 10
+
+SENDING_MESSAGE = 1
+
 IP = "127.0.0.1"
 PORT = 10000
 class Client():
@@ -67,7 +70,7 @@ class Client():
             except Exception as e:
                 # Il s'est passé autre chose, STOP !
                 print('Reading error : {}'.format(str(e)))
-                sys.exit()    
+                sys.exit()
 
     def send_message(self, message):
         # ki ki l'a envoyé
@@ -76,8 +79,9 @@ class Client():
         message = message.encode('utf-8')
         # On détermine son header (la taille du message en gros)
         message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
+        op_header = f"{SENDING_MESSAGE:<{HEADER_LENGTH}}".encode('utf-8')
         # On envoie le tout au serveur
-        self.socket.send(message_header + message)
+        self.socket.send(op_header + message_header + message)
         
     def send_username(self):
         username = self.i_username.encode('utf-8')
