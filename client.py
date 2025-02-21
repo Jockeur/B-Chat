@@ -4,10 +4,8 @@ import errno
 from threading import Thread
 
 from slogging import log
-
-HEADER_LENGTH = 10
-
-SENDING_MESSAGE = 1
+from utils import *
+from utils import SENDING_MESSAGE
 
 IP = ""
 PORT = 10000
@@ -32,26 +30,21 @@ class Client():
         while self.app.running:
             try:
                 # On essaye de voir si on reçoit un message
-                # Nos messages commencerons toujours par le header du pseudo de notre envoyeur
-                username_header = self.socket.recv(HEADER_LENGTH)
-                
-                # Si on ne reçoit rien, c'est que la connection a été fermée (socket.close() ou socket.shutdown(socket.SHUT_RDWR))
-                if not len(username_header):
-                    log('Connection fermée par le serveur')
-                    # Alors on stop le programme
-                    sys.exit()
+                # Nos messages commencerons toujours par l'operation ID pour savoir quelle opération effectuer
+                operation_id = receive_op_id(self.socket)
+                print('Op id : ' + str(operation_id))
                     
                 # Sinon c'est qu'on a quelque chose !
-                # Alors on récupère le username
-                username_length = int(username_header.decode('utf-8').strip())
-                username = self.socket.recv(username_length).decode('utf-8')
-                
-                # Puis le message
-                message_header = self.socket.recv(HEADER_LENGTH)
-                message_length = int(message_header.decode('utf-8').strip())
-                message = self.socket.recv(message_length).decode('utf-8')
-                
-                self.app.register_message(username, message)
+                # Alors on effectue l'opération adéquate
+                if operation_id == SENDING_MESSAGE:
+                    self.process_message(self.socket)
+                # Si on ne reçoit rien, c'est que la connection a été fermée (socket.close() ou socket.shutdown(socket.SHUT_RDWR))
+                elif operation_id == False:
+                    log('Connection fermée par le serveur')
+                    # Alors on stop le programme
+                    self.socket.close()
+                    self.app.running = False
+                    sys.exit()
             
             except IOError as e:
                 # This is normal on non blocking connections - when there are no incoming data, error is going to be raised
@@ -60,6 +53,8 @@ class Client():
                 # If we got different error code - something happened
                 if e.errno != errno.EAGAIN and e.errno != errno.EWOULDBLOCK:
                     print('Reading error: {}'.format(str(e)))
+                    self.app.running = False
+                    self.socket.close()
                     sys.exit()
                     
                 # Else we can just continue since we just didn't receive anything
@@ -68,18 +63,25 @@ class Client():
             except Exception as e:
                 # Il s'est passé autre chose, STOP !
                 print('Reading error : {}'.format(str(e)))
+                self.app.running = False
+                self.socket.close()
                 sys.exit()
+
+    def process_message(self, s: socket.socket):
+        message = get_message(s)        
+        self.app.register_message(message['username']['data'].decode('utf-8').strip(), message['message']['data'].decode('utf-8').strip())
 
     def send_message(self, message):
         # ki ki l'a envoyé
         username_header = f"{len(self.i_username):<{HEADER_LENGTH}}".encode('utf-8')
+        username = self.i_username.encode('utf-8')
         
         message = message.encode('utf-8')
         # On détermine son header (la taille du message en gros)
         message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
         op_header = f"{SENDING_MESSAGE:<{HEADER_LENGTH}}".encode('utf-8')
         # On envoie le tout au serveur
-        self.socket.send(op_header + message_header + message)
+        self.socket.send(op_header + username_header + username + message_header + message)
         
     def send_username(self):
         username = self.i_username.encode('utf-8')

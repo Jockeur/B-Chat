@@ -1,10 +1,7 @@
 import select
 import socket
 from slogging import log
-
-HEADER_LENGTH = 10
-
-SENDING_MESSAGE = 1
+from utils import *
 class Server():
     def __init__(self):
         # L'addresse et le port de connexion du serveur
@@ -36,11 +33,12 @@ class Server():
                 # Si le socket est notre serveur, c'est qu'un client essaye de se connecter
                 if notified_socket == self.socket:
                     client_socket, client_address = self.socket.accept()
-                    username = self.get_message(client_socket)
+                    username_header = client_socket.recv(HEADER_LENGTH)
                     # Si le client s'est déconnecté
-                    if username == False:
+                    if not len(username_header):
                         # On passe à la suite (ignorer la suite de la boucle)
                         continue
+                    username = {'header': username_header, 'data': client_socket.recv(int(username_header.decode('utf-8').strip()))}
                     
                     # On ajoute notre socket à notre list de socket
                     self.socket_list.append(client_socket)
@@ -51,7 +49,7 @@ class Server():
 
                 # Si le socket n'est pas le serveur, alors qq'un essaye de nous envoyer un message
                 else:
-                    operation_id = self.receive_op_id(notified_socket)
+                    operation_id = receive_op_id(notified_socket)
                     
                     match operation_id:
                         case False:
@@ -65,51 +63,27 @@ class Server():
             for notified_socket in error_sockets:
                 self.socket_list.remove(notified_socket)
                 del self.clients[notified_socket]
-    
-    def receive_op_id(self, s: socket.socket):
-        try:
-            message_header = s.recv(HEADER_LENGTH)
-
-            if not len(message_header):
-                return False
-            
-            return int(message_header.decode('utf-8').strip())
-        except:
-            return False
-
-
-    def get_message(self, s: socket.socket):
-        try:
-            message_header = s.recv(HEADER_LENGTH)
-
-            if not len(message_header):
-                return False
-
-            message_length = int(message_header.decode('utf-8').strip())
-
-            return {'header': message_header, 'data': s.recv(message_length)}
-
-        except:
-            return False
         
     def process_message(self, s: socket.socket):
-        message = self.get_message(s)
+        message_infos = get_message(s)
         # On vérifie d'abord que le client ne se soit pas déconnecté
-        if message == False:
+        if message_infos == False:
             log(f"Connection fermée de {self.clients[s]['data'].decode('utf-8')}")
             self.socket_list.remove(s)
             del self.clients[s]
 
             return
                     
-        username = self.clients[s]
+        username = message_infos['username']
+        message = message_infos['message']
         log(f"Message reçu de {username['data'].decode('utf-8')}: {message['data'].decode('utf-8').strip()}")
                     
         # Le renvoyer à tout le monde
         for client in self.clients:
             # Par contre on le renvoit pas à l'envoyeur
             if client != s:
-                client.sendall(username['header'] + username['data'] + message['header'] + message['data'])
+                op_header = f"{SENDING_MESSAGE:<{HEADER_LENGTH}}".encode('utf-8')
+                client.sendall(op_header + username['header'] + username['data'] + message['header'] + message['data'])
 
         
 Server()
