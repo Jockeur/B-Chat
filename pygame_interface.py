@@ -13,6 +13,7 @@ class App():
         self.clock = pygame.time.Clock()
         self.running = True
         
+        self.room = "Groupe général de discussion"
         self.messages={}
         self.message=""
         self.typingOn=False
@@ -51,7 +52,7 @@ class App():
         pass
     
     def draw(self):
-        self.screen.fill((255,255,255))
+        self.screen.fill((183,188,189))
         
         # RENDER YOUR GAME HERE
         # Render all the messages
@@ -81,6 +82,13 @@ class App():
         typing_surface = self.font.render(self.message, True, "black")
         self.screen.blit(typing_surface, (10, self.screen.get_height() - 50 + round(25/2)))
 
+        # Render the top bar with the groupe infos (group name, who's currently typing, etc.)
+        top_rect = pygame.Rect(0, 0, self.screen.get_width(), 50)
+        pygame.draw.rect(self.screen, (129, 134, 135), top_rect)
+        pygame.draw.line(self.screen, (0, 0, 0), (0, 50), (self.screen.get_width(), 50))
+        group_name = self.font.render(self.room, True, "white")
+        self.screen.blit(group_name, (10, 12))
+
         pygame.display.flip()
         self.clock.tick(60)
         
@@ -92,7 +100,6 @@ class App():
             
         pygame.quit()
         sys.exit()
-        
 
 
     ## Fonctions utilitaires
