@@ -19,14 +19,14 @@ class App():
         self.typingOn=False
         self.brightTheme=True
         self.LETTER_timer = 0
-        
-        # Partie logique
-        self.client = Client(self)
-        
-        self.username = self.client.i_username
+
+        self.scroll = 0
+
+        self.username = ""
         
         self.run()
-   
+
+    ## Fonctions Pygame quand l'utilisateur est connecté
     def events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -47,6 +47,9 @@ class App():
                     # Register the message localy
                     self.register_message(self.username, self.message)
                     self.message = ""
+            elif event.type == pygame.MOUSEWHEEL:
+                if self.scroll + event.y >= 0 and self.scroll + event.y <= len(self.messages.values()):
+                    self.scroll += event.y
                 
     def update(self):
         pass
@@ -62,7 +65,7 @@ class App():
 
             # Calculate the bubble position based on the other's
             y_bubble = 50
-            for j in range(len(list(self.messages.values())[i:])):
+            for j in range(len(list(self.messages.values())[i:max(0, len(self.messages.values()) - round(self.scroll))])):
                 y_bubble += 60
             bubble_x = 10 if self.messages[str(i)]["sender"] == self.username else self.screen.get_width() - message_text.get_width() - 30
             message_offset = 10
@@ -91,8 +94,26 @@ class App():
 
         pygame.display.flip()
         self.clock.tick(60)
+
+    def wait_for_username(self):
+        self.screen.fill((183,188,189))
+        self.screen.blit(self.font.render("Quel est votre pseudo ?", True, "black"), (10, 10))
+        self.screen.blit(self.font.render(self.message, True, "black"), (10, 50))
+        pygame.display.flip()
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN:
+                    self.username = self.message
+                    self.message = ""
+                    self.client = Client(self)
+                elif event.key == pygame.K_BACKSPACE:
+                    self.message = self.message[:-1]
+                else:
+                    self.message += event.unicode
         
     def run(self):
+        while self.username == "":
+            self.wait_for_username()
         while self.running:
             self.events()
             self.update()

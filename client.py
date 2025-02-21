@@ -9,19 +9,17 @@ HEADER_LENGTH = 10
 
 SENDING_MESSAGE = 1
 
-IP = "127.0.0.1"
+IP = ""
 PORT = 10000
 class Client():
     def __init__(self, app):
-        self.i_username = input('Quel est votre pseudo > ')
+        self.i_username = app.username
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.app = app
         
         self.socket.connect((IP, PORT))
         self.socket.setblocking(False)
-        print("end of connection")
         self.send_username()
-        print('username sended')
         self.main()
         
         

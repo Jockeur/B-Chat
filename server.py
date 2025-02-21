@@ -50,24 +50,6 @@ class Server():
                     log(f"Connection acceptée venant de {client_address[0]}:{client_address[1]}, nom {username['data'].decode('utf-8')}")
 
                 # Si le socket n'est pas le serveur, alors qq'un essaye de nous envoyer un message
-                # else:
-                #     message = self.receive_message(notified_socket)
-                #     # On vérifie d'abord que le client ne s'est pas déconnecté
-                #     if message == False:
-                #         print(f"Connection fermée de {self.clients[notified_socket]['data'].decode('utf-8')}")
-                #         self.socket_list.remove(notified_socket)
-                #         del self.clients[notified_socket]
-                        
-                #         continue
-                    
-                #     username = self.clients[notified_socket]
-                #     print(f"Message reçu de {username['data'].decode('utf-8')}: {message['data'].decode('utf-8').strip()}")
-                    
-                #     # Le renvoyer à tout le monde parce qu'on est gentil et qu'on aime partager les choses 🥰 (j'vais cabler frr)
-                #     for client in self.clients:
-                #         # Par contre on le renvoit pas à l'envoyeur ça c'est pas gentil 🥲
-                #         if client != notified_socket:
-                #             client.sendall(username['header'] + username['data'] + message['header'] + message['data'])
                 else:
                     operation_id = self.receive_op_id(notified_socket)
                     
@@ -83,10 +65,6 @@ class Server():
             for notified_socket in error_sockets:
                 self.socket_list.remove(notified_socket)
                 del self.clients[notified_socket]
-                
-    def broadcast_message(self, message: str, sender: socket.socket):
-        for c in self.clients:
-            print(c)
     
     def receive_op_id(self, s: socket.socket):
         try:
@@ -94,7 +72,7 @@ class Server():
 
             if not len(message_header):
                 return False
-
+            
             return int(message_header.decode('utf-8').strip())
         except:
             return False
@@ -125,11 +103,11 @@ class Server():
             return
                     
         username = self.clients[s]
-        print(f"Message reçu de {username['data'].decode('utf-8')}: {message['data'].decode('utf-8').strip()}")
+        log(f"Message reçu de {username['data'].decode('utf-8')}: {message['data'].decode('utf-8').strip()}")
                     
-        # Le renvoyer à tout le monde parce qu'on est gentil et qu'on aime partager les choses 🥰 (j'vais cabler frr)
+        # Le renvoyer à tout le monde
         for client in self.clients:
-            # Par contre on le renvoit pas à l'envoyeur ça c'est pas gentil 🥲
+            # Par contre on le renvoit pas à l'envoyeur
             if client != s:
                 client.sendall(username['header'] + username['data'] + message['header'] + message['data'])
 
