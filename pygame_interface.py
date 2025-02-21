@@ -10,6 +10,8 @@ class App():
         pygame.font.init()
         self.font = pygame.font.Font(size=36)
         self.screen = pygame.display.set_mode((1280, 720), pygame.RESIZABLE)
+        self.contact_surface = None
+        self.message_surface = None
         self.clock = pygame.time.Clock()
         self.running = True
         
@@ -56,10 +58,14 @@ class App():
     
     def draw(self):
         self.screen.fill((183,188,189))
-        
-        # RENDER YOUR GAME HERE
-        # Render all the messages
 
+        # RENDER YOUR GAME HERE
+
+        # Render the subsurfaces
+        self.contact_surface = self.screen.subsurface((0, 0, self.screen.get_width()/5, self.screen.get_height()))
+        self.message_surface = self.screen.subsurface((self.screen.get_width()/5, 0, self.screen.get_width()/5*4, self.screen.get_height()))
+
+        # Render all the messages
         for i in range(len(self.messages)):
             message_text = self.font.render(self.messages[str(i)]["message"], True, "black")
 
@@ -67,34 +73,38 @@ class App():
             y_bubble = 50
             for j in range(len(list(self.messages.values())[i:max(0, len(self.messages.values()) - round(self.scroll))])):
                 y_bubble += 60
-            bubble_x = 10 if self.messages[str(i)]["sender"] == self.username else self.screen.get_width() - message_text.get_width() - 30
+            bubble_x = 10 if self.messages[str(i)]["sender"] == self.username else self.message_surface.get_width() - message_text.get_width() - 30
             message_offset = 10
 
-            message_bubble = pygame.Rect(bubble_x, self.screen.get_height() - y_bubble, message_text.get_width() + 20, 50)
+            message_bubble = pygame.Rect(bubble_x, self.message_surface.get_height() - y_bubble, message_text.get_width() + 20, 50)
 
             bubble_color = pygame.Color(128, 140, 144) if self.username != self.messages[str(i)]["sender"] else pygame.Color(36, 175, 227)
 
-            pygame.draw.rect(self.screen, bubble_color, message_bubble, border_radius=15)
-            self.screen.blit(message_text, (bubble_x + message_offset, self.screen.get_height() - y_bubble + round(25/2)))
+            pygame.draw.rect(self.message_surface, bubble_color, message_bubble, border_radius=15)
+            self.message_surface.blit(message_text, (bubble_x + message_offset, self.message_surface.get_height() - y_bubble + round(25/2)))
 
         # Render the typing area
-        type_area = pygame.Rect(0, self.screen.get_height() - 50, self.screen.get_width(), 50)
-        pygame.draw.rect(self.screen, pygame.Color(36, 175, 227), type_area, border_radius=15)
+        type_area = pygame.Rect(0, self.message_surface.get_height() - 50, self.message_surface.get_width(), 50)
+        pygame.draw.rect(self.message_surface, pygame.Color(36, 175, 227), type_area, border_radius=15)
 
         # Rendering the message that the user is curently typing
         typing_surface = self.font.render(self.message, True, "black")
-        self.screen.blit(typing_surface, (10, self.screen.get_height() - 50 + round(25/2)))
+        self.message_surface.blit(typing_surface, (10, self.message_surface.get_height() - 50 + round(25/2)))
 
         # Render the top bar with the groupe infos (group name, who's currently typing, etc.)
-        top_rect = pygame.Rect(0, 0, self.screen.get_width(), 50)
-        pygame.draw.rect(self.screen, (129, 134, 135), top_rect)
-        pygame.draw.line(self.screen, (0, 0, 0), (0, 50), (self.screen.get_width(), 50))
+        top_rect = pygame.Rect(0, 0, self.message_surface.get_width(), 50)
+        pygame.draw.rect(self.message_surface, (129, 134, 135), top_rect)
+        pygame.draw.line(self.message_surface, (0, 0, 0), (0, 50), (self.message_surface.get_width(), 50))
         group_name = self.font.render(self.room, True, "white")
-        self.screen.blit(group_name, (10, 12))
+        self.message_surface.blit(group_name, (10, 12))
+
+        # Render the contact list
+        pygame.draw.line(self.screen, (0, 0, 0), (self.contact_surface.get_width(), 0), (self.contact_surface.get_width(), self.screen.get_height()))
 
         pygame.display.flip()
         self.clock.tick(60)
 
+    ## Fonctions Pygame quand l'utilisateur n'est pas connecté
     def wait_for_username(self):
         self.screen.fill((183,188,189))
         self.screen.blit(self.font.render("Quel est votre pseudo ?", True, "black"), (10, 10))
@@ -110,7 +120,8 @@ class App():
                     self.message = self.message[:-1]
                 else:
                     self.message += event.unicode
-        
+    
+    ## Fonction principale
     def run(self):
         while self.username == "":
             self.wait_for_username()
