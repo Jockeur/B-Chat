@@ -5,7 +5,6 @@ from threading import Thread
 
 from slogging import log
 from utils import *
-from utils import SENDING_MESSAGE
 
 IP = ""
 PORT = 10000
