@@ -67,29 +67,51 @@ class App():
 
         # Render all the messages
         for i in range(len(self.messages)):
-            message_text = self.font.render(self.messages[str(i)]["message"], True, "black")
+            message = self.messages[str(i)]["message"]
+            message_lines = self.fit_text(message, round(self.message_surface.get_width()/2))
+            message_width = 0
 
             # Calculate the bubble position based on the other's
             y_bubble = 50
-            for j in range(len(list(self.messages.values())[i:max(0, len(self.messages.values()) - round(self.scroll))])):
-                y_bubble += 60
-            bubble_x = 10 if self.messages[str(i)]["sender"] == self.username else self.message_surface.get_width() - message_text.get_width() - 30
+            for j in range(len(list(self.messages.values())[i:len(self.messages.values()) - self.scroll])):
+                y_bubble += 60 + 50*(len(self.fit_text(self.messages[str(i+j)]["message"], self.message_surface.get_width()//2)) - 1)
+            bubble_x = 10 if self.messages[str(i)]["sender"] == self.username else self.message_surface.get_width() - self.font.size(message).get_width() - 30
             message_offset = 10
 
-            message_bubble = pygame.Rect(bubble_x, self.message_surface.get_height() - y_bubble, message_text.get_width() + 20, 50)
+            for line in message_lines:
+                if self.font.size(line)[0] > message_width:
+                    message_width = self.font.size(line)[0]
 
+            message_bubble = pygame.Rect(bubble_x, self.message_surface.get_height() - y_bubble, message_width + message_offset*2, 50*len(message_lines))
+
+            # Render the bubble
             bubble_color = pygame.Color(128, 140, 144) if self.username != self.messages[str(i)]["sender"] else pygame.Color(36, 175, 227)
-
             pygame.draw.rect(self.message_surface, bubble_color, message_bubble, border_radius=15)
-            self.message_surface.blit(message_text, (bubble_x + message_offset, self.message_surface.get_height() - y_bubble + round(25/2)))
+            
+            # Render each line of the message
+            for j in range(len(message_lines)):
+                message_font = self.font.render(message_lines[j].strip(), True, "black")
+                self.message_surface.blit(message_font, (bubble_x + message_offset, self.message_surface.get_height() - y_bubble + 13 + j*30))
+
+        ## Render user interaction
+        message_fit = self.fit_text(self.message, self.message_surface.get_width() - 20)
+
+        type_area_height = 10
+        for line in message_fit:
+            type_area_height += self.font.size(line)[1] + 10
+
 
         # Render the typing area
-        type_area = pygame.Rect(0, self.message_surface.get_height() - 50, self.message_surface.get_width(), 50)
+        type_area = pygame.Rect(0, self.message_surface.get_height() - type_area_height, self.message_surface.get_width(), type_area_height)
         pygame.draw.rect(self.message_surface, pygame.Color(36, 175, 227), type_area, border_radius=15)
 
         # Rendering the message that the user is curently typing
-        typing_surface = self.font.render(self.message, True, "black")
-        self.message_surface.blit(typing_surface, (10, self.message_surface.get_height() - 50 + round(25/2)))
+        for j in range(len(message_fit)):
+            text_height = 10
+            typing_surface = self.font.render(message_fit[j].strip(), True, "black")
+            for line in message_fit[:j]:
+                text_height += self.font.size(line)[1] + 10
+            self.message_surface.blit(typing_surface, (10, self.message_surface.get_height() - type_area_height + text_height))
 
         # Render the top bar with the groupe infos (group name, who's currently typing, etc.)
         top_rect = pygame.Rect(0, 0, self.message_surface.get_width(), 50)
@@ -112,7 +134,7 @@ class App():
         pygame.display.flip()
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RETURN:
+                if event.key == pygame.K_RETURN and self.message != "":
                     self.username = self.message
                     self.message = ""
                     self.client = Client(self)
@@ -145,5 +167,29 @@ class App():
                     json.dump(self.messages, file, indent=2)
                     file.truncate()
 
+    def fit_text(self, text: str, max_width: int):
+        if self.font.size(text)[0] > max_width:
+            temp = text
+            i = 1
+            while self.font.size(temp)[0] > max_width:
+                try:
+                    if text[-i-1] == " ":
+                        temp = text[:-i]
+                except IndexError:
+                    i = self.fit_text_just(text, max_width)
+                    break
+                i += 1
+            first_part = text[:-i]
+            second_part = text[-i:].strip()
+            return [first_part] + self.fit_text(second_part, max_width)
+        return [text]
+    
+    def fit_text_just(self, text: str, max_width: int):
+        temp = text
+        i = 1
+        while self.font.size(temp)[0] > max_width:
+            temp = text[:-i]
+            i += 1
+        return i
 
 App()
