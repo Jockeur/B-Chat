@@ -16,6 +16,7 @@ class Server():
         self.socket_list = []
         self.clients = {}
         self.start()
+        
     
     def start(self):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -35,12 +36,12 @@ class Server():
                 # Si le socket est notre serveur, c'est qu'un client essaye de se connecter
                 if notified_socket == self.socket:
                     client_socket, client_address = self.socket.accept()
-                    loging = self.check_login(client_socket)
+                    (logging, username) = self.check_login(client_socket)
 
-                    if loging:
+                    if logging:
                         # On ajoute le nouveau client à notre liste de clients
                         self.socket_list.append(client_socket)
-                        self.clients[client_socket] = {'data': client_address}
+                        self.clients[client_socket] = {'address': client_address, 'username': username['data']}
                         log(f"Nouvelle connexion de {client_address}")
                     else:
                         log(f"Connection refusée de {client_address}")
@@ -52,7 +53,7 @@ class Server():
                     
                     match operation_id:
                         case False:
-                            log(f"Connection fermée de {self.clients[notified_socket]['data'].decode('utf-8')}")
+                            log(f"Connection fermée de {self.clients[notified_socket]['username'].decode('utf-8')}")
                             self.socket_list.remove(notified_socket)
                             del self.clients[notified_socket]
                         case SENDING_MESSAGE:
@@ -62,6 +63,7 @@ class Server():
             for notified_socket in error_sockets:
                 self.socket_list.remove(notified_socket)
                 del self.clients[notified_socket]
+
         
     def process_message(self, s: socket.socket):
         message_infos = get_message(s)
@@ -83,13 +85,14 @@ class Server():
             if client != s:
                 op_header = f"{SENDING_MESSAGE:<{HEADER_LENGTH}}".encode('utf-8')
                 client.sendall(op_header + username['header'] + username['data'] + message['header'] + message['data'])
+
     
     def check_login(self, s: socket.socket):
         username_header = s.recv(HEADER_LENGTH)
         # Si le client s'est déconnecté
         if not len(username_header):
             return False
-        username = {'header': username_header, 'data': s.recv(int(username_header.decode('utf-8').strip())).decode('utf-8').strip()}
+        username = {'header': username_header, 'data': s.recv(int(username_header.decode('utf-8').strip()))}
 
         password_header = s.recv(HEADER_LENGTH)
         # Si le client s'est déconnecté
@@ -100,17 +103,17 @@ class Server():
 
         # On vérifie dans notre DB si le client est bien inscrit
         # Nos utilisateurs son stockés dans un fichier json (voir utils.py)
-        print(username['data'] + " " + password['data'])
+        print(username['data'].decode('utf-8').strip() + " " + password['data'])
         with open(f'{os.getcwd()}/users.json', 'r') as file:
             users = json.load(file)
             for id in users:
-                if users[id]['username'] == username['data'] and users[id]['password'] == password['data']:
+                if users[id]['username'] == username['data'].decode('utf-8').strip() and users[id]['password'] == password['data']:
                     op_header = f"{ACCESS_GRANTED:<{HEADER_LENGTH}}".encode('utf-8')
                     s.sendall(op_header)
-                    return True
+                    return (True, username)
         # Si on arrive ici, c'est que le client n'est pas inscrit
         op_header = f"{ACCESS_DENIED:<{HEADER_LENGTH}}".encode('utf-8')
         s.sendall(op_header)
-        return False
+        return (False, username)
         
 Server()
