@@ -25,6 +25,9 @@ class App():
         self.scroll = 0
 
         self.username = ""
+        self.password = ""
+
+        self.client = Client(self)
         
         self.run()
 
@@ -44,10 +47,10 @@ class App():
                     self.message += event.unicode
                 elif event.key == pygame.K_RETURN and self.message != "":
                     # Send the message to the server
-                    self.client.send_message(self.message)
+                    self.client.send_message(self.message.strip())
 
                     # Register the message localy
-                    self.register_message(self.username, self.message)
+                    self.register_message(self.username, self.message.strip())
                     self.message = ""
             elif event.type == pygame.MOUSEWHEEL:
                 if self.scroll + event.y >= 0 and self.scroll + event.y <= len(self.messages.values()):
@@ -65,41 +68,12 @@ class App():
         self.contact_surface = self.screen.subsurface((0, 0, self.screen.get_width()/5, self.screen.get_height()))
         self.message_surface = self.screen.subsurface((self.screen.get_width()/5, 0, self.screen.get_width()/5*4, self.screen.get_height()))
 
-        # Render all the messages
-        for i in range(len(self.messages)):
-            message = self.messages[str(i)]["message"]
-            message_lines = self.fit_text(message, round(self.message_surface.get_width()/2))
-            message_width = 0
-
-            # Calculate the bubble position based on the other's
-            y_bubble = 50
-            for j in range(len(list(self.messages.values())[i:len(self.messages.values()) - self.scroll])):
-                y_bubble += 60 + 50*(len(self.fit_text(self.messages[str(i+j)]["message"], self.message_surface.get_width()//2)) - 1)
-            bubble_x = 10 if self.messages[str(i)]["sender"] == self.username else self.message_surface.get_width() - self.font.size(message).get_width() - 30
-            message_offset = 10
-
-            for line in message_lines:
-                if self.font.size(line)[0] > message_width:
-                    message_width = self.font.size(line)[0]
-
-            message_bubble = pygame.Rect(bubble_x, self.message_surface.get_height() - y_bubble, message_width + message_offset*2, 50*len(message_lines))
-
-            # Render the bubble
-            bubble_color = pygame.Color(128, 140, 144) if self.username != self.messages[str(i)]["sender"] else pygame.Color(36, 175, 227)
-            pygame.draw.rect(self.message_surface, bubble_color, message_bubble, border_radius=15)
-            
-            # Render each line of the message
-            for j in range(len(message_lines)):
-                message_font = self.font.render(message_lines[j].strip(), True, "black")
-                self.message_surface.blit(message_font, (bubble_x + message_offset, self.message_surface.get_height() - y_bubble + 13 + j*30))
-
         ## Render user interaction
         message_fit = self.fit_text(self.message, self.message_surface.get_width() - 20)
 
         type_area_height = 10
         for line in message_fit:
             type_area_height += self.font.size(line)[1] + 10
-
 
         # Render the typing area
         type_area = pygame.Rect(0, self.message_surface.get_height() - type_area_height, self.message_surface.get_width(), type_area_height)
@@ -112,8 +86,52 @@ class App():
             for line in message_fit[:j]:
                 text_height += self.font.size(line)[1] + 10
             self.message_surface.blit(typing_surface, (10, self.message_surface.get_height() - type_area_height + text_height))
+        
 
-        # Render the top bar with the groupe infos (group name, who's currently typing, etc.)
+        ## Render all the messages
+        for i in range(len(self.messages)):
+            message_offset = 10
+
+            message = self.messages[str(i)]["message"]
+            message_lines = self.fit_text(message, self.message_surface.get_width()/2 - 20)
+            message_width = 0
+
+            # Set the minimal width to fit the entire message
+            for line in message_lines:
+                if self.font.size(line)[0] > message_width:
+                    message_width = self.font.size(line)[0]
+
+            # Calculate the bubble position based on the other's
+            y_bubble = message_offset + type_area_height
+
+            bubble_height = 10
+            for j in range(len(list(self.messages.values())[i:len(self.messages.values()) - self.scroll])):
+                message_fit = self.fit_text(self.messages[str(i+j)]["message"], self.message_surface.get_width()/2 - 20)
+                y_bubble = y_bubble + 20 if j > 0 else y_bubble
+                for line in message_fit:
+                    if j == 0:
+                        bubble_height += message_offset + self.font.size(line)[1]
+                    else:
+                        y_bubble += message_offset + self.font.size(line)[1]
+            bubble_x = 10 if self.messages[str(i)]["sender"] == self.username else self.message_surface.get_width() - message_width - 3*message_offset
+
+            y_bubble += bubble_height
+
+            message_bubble = pygame.Rect(bubble_x, self.message_surface.get_height() - y_bubble, message_width + message_offset*2, bubble_height)
+
+            # Render the bubble
+            bubble_color = pygame.Color(128, 140, 144) if self.username != self.messages[str(i)]["sender"] else pygame.Color(36, 175, 227)
+            pygame.draw.rect(self.message_surface, bubble_color, message_bubble, border_radius=15)
+            
+            # Render each line of the message
+            for j in range(len(message_lines)):
+                text_height = 10
+                message_font = self.font.render(message_lines[j].strip(), True, "black")
+                for line in message_lines[:j]:
+                    text_height += self.font.size(line)[1] + 10
+                self.message_surface.blit(message_font, (bubble_x + message_offset, self.message_surface.get_height() - y_bubble + text_height))
+
+        ## Render the top bar with the groupe infos (group name, who's currently typing, etc.)
         top_rect = pygame.Rect(0, 0, self.message_surface.get_width(), 50)
         pygame.draw.rect(self.message_surface, (129, 134, 135), top_rect)
         pygame.draw.line(self.message_surface, (0, 0, 0), (0, 50), (self.message_surface.get_width(), 50))
@@ -127,26 +145,60 @@ class App():
         self.clock.tick(60)
 
     ## Fonctions Pygame quand l'utilisateur n'est pas connecté
-    def wait_for_username(self):
-        self.screen.fill((183,188,189))
-        self.screen.blit(self.font.render("Quel est votre pseudo ?", True, "black"), (10, 10))
-        self.screen.blit(self.font.render(self.message, True, "black"), (10, 50))
-        pygame.display.flip()
-        for event in pygame.event.get():
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RETURN and self.message != "":
-                    self.username = self.message
-                    self.message = ""
-                    self.client = Client(self)
-                elif event.key == pygame.K_BACKSPACE:
-                    self.message = self.message[:-1]
-                else:
-                    self.message += event.unicode
+    def enter_username(self):
+        while True:
+            self.screen.fill((183,188,189))
+            self.screen.blit(self.font.render("Quel est votre pseudo ?", True, "black"), (10, 10))
+            self.screen.blit(self.font.render(self.message, True, "black"), (10, 50))
+            pygame.display.flip()
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    sys.exit()
+                    pygame.quit()
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN and self.message != "":
+                        self.username = self.message
+                        self.message = ""
+                        return
+                    elif event.key == pygame.K_BACKSPACE:
+                        self.message = self.message[:-1]
+                    else:
+                        self.message += event.unicode
+
+    def enter_password(self):
+        while True:
+            self.screen.fill((183,188,189))
+            self.screen.blit(self.font.render("Quel est votre mot de passe ?", True, "black"), (10, 10))
+            self.screen.blit(self.font.render(self.message, True, "black"), (10, 50))
+            pygame.display.flip()
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    sys.exit()
+                    pygame.quit()
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN and self.message != "":
+                        self.password = self.message
+                        self.message = ""
+                        return
+                    elif event.key == pygame.K_BACKSPACE:
+                        self.message = self.message[:-1]
+                    else:
+                        self.message += event.unicode
+
+    def login(self):
+        logged = False
+        while not logged:
+            self.enter_username()
+            self.enter_password()
+            result = self.client.login(self.username, self.password)
+            if result:
+                logged = True
+                break
+            
     
     ## Fonction principale
     def run(self):
-        while self.username == "":
-            self.wait_for_username()
+        self.login()
         while self.running:
             self.events()
             self.update()

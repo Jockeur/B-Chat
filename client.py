@@ -6,18 +6,17 @@ from threading import Thread
 from slogging import log
 from utils import *
 
-IP = ""
+IP = "127.0.0.1"
 PORT = 10000
 class Client():
     def __init__(self, app):
         self.i_username = app.username
+        self.i_password = app.password
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.app = app
         
         self.socket.connect((IP, PORT))
         self.socket.setblocking(False)
-        self.send_username()
-        self.main()
         
         
     def main(self):
@@ -86,3 +85,17 @@ class Client():
         username = self.i_username.encode('utf-8')
         username_header = f"{len(username):<{HEADER_LENGTH}}".encode('utf-8')
         self.socket.send(username_header + username)
+
+    def login(self, username: str, password: str):
+        username = username.encode('utf-8')
+        username_header = f"{len(username):<{HEADER_LENGTH}}".encode('utf-8')
+        password = password.encode('utf-8')
+        password_header = f"{len(password):<{HEADER_LENGTH}}".encode('utf-8')
+
+        self.socket.send(username_header + username + password_header + password)
+        
+        while True:
+            try:
+                return receive_op_id(self.socket) == ACCESS_GRANTED
+            except BlockingIOError:
+                continue

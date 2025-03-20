@@ -1,3 +1,5 @@
+import json
+import os
 import select
 import socket
 from slogging import log
@@ -33,19 +35,16 @@ class Server():
                 # Si le socket est notre serveur, c'est qu'un client essaye de se connecter
                 if notified_socket == self.socket:
                     client_socket, client_address = self.socket.accept()
-                    username_header = client_socket.recv(HEADER_LENGTH)
-                    # Si le client s'est déconnecté
-                    if not len(username_header):
-                        # On passe à la suite (ignorer la suite de la boucle)
-                        continue
-                    username = {'header': username_header, 'data': client_socket.recv(int(username_header.decode('utf-8').strip()))}
-                    
-                    # On ajoute notre socket à notre list de socket
-                    self.socket_list.append(client_socket)
-                    
-                    # On ajoute notre client à notre client_list
-                    self.clients[client_socket] = username
-                    log(f"Connection acceptée venant de {client_address[0]}:{client_address[1]}, nom {username['data'].decode('utf-8')}")
+                    loging = self.check_login(client_socket)
+
+                    if loging:
+                        # On ajoute le nouveau client à notre liste de clients
+                        self.socket_list.append(client_socket)
+                        self.clients[client_socket] = {'data': client_address}
+                        log(f"Nouvelle connexion de {client_address}")
+                    else:
+                        log(f"Connection refusée de {client_address}")
+                        client_socket.close()
 
                 # Si le socket n'est pas le serveur, alors qq'un essaye de nous envoyer un message
                 else:
@@ -84,6 +83,34 @@ class Server():
             if client != s:
                 op_header = f"{SENDING_MESSAGE:<{HEADER_LENGTH}}".encode('utf-8')
                 client.sendall(op_header + username['header'] + username['data'] + message['header'] + message['data'])
+    
+    def check_login(self, s: socket.socket):
+        username_header = s.recv(HEADER_LENGTH)
+        # Si le client s'est déconnecté
+        if not len(username_header):
+            return False
+        username = {'header': username_header, 'data': s.recv(int(username_header.decode('utf-8').strip())).decode('utf-8').strip()}
 
+        password_header = s.recv(HEADER_LENGTH)
+        # Si le client s'est déconnecté
+        if not len(password_header):
+            # On passe à la suite (ignorer la suite de la boucle)
+            return False
+        password = {'header': password_header, 'data': s.recv(int(password_header.decode('utf-8').strip())).decode('utf-8').strip()}
+
+        # On vérifie dans notre DB si le client est bien inscrit
+        # Nos utilisateurs son stockés dans un fichier json (voir utils.py)
+        print(username['data'] + " " + password['data'])
+        with open(f'{os.getcwd()}/users.json', 'r') as file:
+            users = json.load(file)
+            for id in users:
+                if users[id]['username'] == username['data'] and users[id]['password'] == password['data']:
+                    op_header = f"{ACCESS_GRANTED:<{HEADER_LENGTH}}".encode('utf-8')
+                    s.sendall(op_header)
+                    return True
+        # Si on arrive ici, c'est que le client n'est pas inscrit
+        op_header = f"{ACCESS_DENIED:<{HEADER_LENGTH}}".encode('utf-8')
+        s.sendall(op_header)
+        return False
         
 Server()

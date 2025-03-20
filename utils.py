@@ -4,6 +4,8 @@ HEADER_LENGTH = 10
 
 ## Operations IDs
 SENDING_MESSAGE = 1
+ACCESS_DENIED = 403
+ACCESS_GRANTED = 200
 
 '''Fonctions communes au server et au client'''
 def receive_op_id(s: socket.socket):
