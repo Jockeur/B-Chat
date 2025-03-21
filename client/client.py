@@ -1,4 +1,5 @@
-import sys, socket
+import os
+import sys, socket, hashlib
 import errno
 
 from threading import Thread
@@ -23,6 +24,7 @@ class Client():
         receive_thread = Thread(target=self.receive_message)
         receive_thread.start()
         
+
     def receive_message(self):
         '''Une boucle vérifiant que l'utilisateur est toujours connecté et enregistre un message si jamais il en a reçu un'''
         while self.app.running:
@@ -65,9 +67,11 @@ class Client():
                 self.socket.close()
                 sys.exit()
 
+
     def process_message(self, s: socket.socket):
         message = get_message(s)        
         self.app.register_message(message['username']['data'].decode('utf-8').strip(), message['message']['data'].decode('utf-8').strip())
+
 
     def send_message(self, message):
         # ki ki l'a envoyé
@@ -81,10 +85,12 @@ class Client():
         # On envoie le tout au serveur
         self.socket.send(op_header + username_header + username + message_header + message)
         
+
     def send_username(self):
         username = self.i_username.encode('utf-8')
         username_header = f"{len(username):<{HEADER_LENGTH}}".encode('utf-8')
         self.socket.send(username_header + username)
+
 
     def login(self, username: str, password: str):
         username = username.encode('utf-8')
@@ -99,3 +105,31 @@ class Client():
                 return receive_op_id(self.socket) == ACCESS_GRANTED
             except BlockingIOError:
                 continue
+
+    
+    def check_file(self, s: socket.socket):
+
+        # Je calcule le hash du fichier des messages
+        with open(f'{os.getcwd}/message_client.json', 'r') as f:
+            file_hash = hashlib.md5(f.read()).hexdigest()
+
+        op_id = f"{CHECK_FILE:<{HEADER_LENGTH}}".encode('utf-8')
+        header = f"{len(file_hash):<{HEADER_LENGTH}}".encode('utf-8')
+        s.send(op_id + header + file_hash.encode('utf-8'))
+        
+        while True:
+            try:
+                return receive_op_id(s) == FILE_CORRECT
+            except BlockingIOError:
+                continue
+
+
+    def update_file(self, s: socket.socket):
+        op_id = f"{UPDATE_FILE:<{HEADER_LENGTH}}".encode('utf-8')
+        s.send(op_id)
+
+        l = s.recv(HEADER_LENGTH)
+        length = int(l.decode('utf-8').strip())
+        data = s.recv(length)
+        with open(f'{os.getcwd}/message_client.json', 'w') as f:
+            f.write(data.decode('utf-8'))

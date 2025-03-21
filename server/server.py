@@ -2,8 +2,10 @@ import json
 import os
 import select
 import socket
+import utils
+
 from slogging import log
-from utils import *
+from utils import SENDING_MESSAGE, ACCESS_DENIED, ACCESS_GRANTED, HEADER_LENGTH, receive_op_id, get_message
 class Server():
     def __init__(self):
         # L'addresse et le port de connexion du serveur
@@ -56,8 +58,10 @@ class Server():
                             log(f"Connection fermée de {self.clients[notified_socket]['username'].decode('utf-8')}")
                             self.socket_list.remove(notified_socket)
                             del self.clients[notified_socket]
-                        case SENDING_MESSAGE:
+                        case utils.SENDING_MESSAGE:
                             self.process_message(notified_socket)
+                        case utils.CHECK_FILE:
+                            self.check_file(notified_socket)
                             
             # On peut maintenant s'occuper des sockets en erreur (les connards qui se sont déconectés)
             for notified_socket in error_sockets:
