@@ -27,7 +27,7 @@ class App():
         self.username = ""
         self.password = ""
 
-        self.client = Client(self)
+        self.client: Client
         
         self.run()
 
@@ -190,6 +190,7 @@ class App():
         while not logged:
             self.enter_username()
             self.enter_password()
+            self.client = Client(self)
             result = self.client.login(self.username, self.password)
             if result:
                 logged = True
