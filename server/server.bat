@@ -1,1 +1,1 @@
-python3 server.py
+python3 %~dp0/server.py
