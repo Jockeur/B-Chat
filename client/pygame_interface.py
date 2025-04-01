@@ -57,7 +57,7 @@ class App():
                     self.scroll += event.y
                 
     def update(self):
-        pass
+        self.update_messages()
     
     def draw(self):
         self.screen.fill((183,188,189))
@@ -200,6 +200,7 @@ class App():
     ## Fonction principale
     def run(self):
         self.login()
+        self.client.main()
         while self.running:
             self.events()
             self.update()
@@ -213,7 +214,12 @@ class App():
     def register_message(self, username: str, message: str):
         self.messages[str(len(list(self.messages.values())))] = {"sender": username, "message": message}
         self.save_messages()
-        
+    
+    def update_messages(self):
+        with open(f"{os.getcwd()}/messages.json", 'r') as file:
+            self.messages = json.load(file)
+            file.close()
+    
     def save_messages(self):
         with open(f'{os.getcwd()}/messages.json', 'r+') as file:
                     file.seek(0)

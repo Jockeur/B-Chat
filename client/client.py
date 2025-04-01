@@ -21,6 +21,7 @@ class Client():
         
         
     def main(self):
+        self.check_file(self.socket)
         receive_thread = Thread(target=self.receive_message)
         receive_thread.start()
         
@@ -108,20 +109,26 @@ class Client():
 
     
     def check_file(self, s: socket.socket):
-
-        # Je calcule le hash du fichier des messages
-        with open(f'{os.getcwd}/message_client.json', 'r') as f:
-            file_hash = hashlib.md5(f.read()).hexdigest()
+        print("Check file")
+        s.setblocking(True)
+        file = open(f'{os.getcwd()}/messages.json', 'r')
+        file_hash = hashlib.md5(file.read().encode('utf-8')).hexdigest()
 
         op_id = f"{CHECK_FILE:<{HEADER_LENGTH}}".encode('utf-8')
         header = f"{len(file_hash):<{HEADER_LENGTH}}".encode('utf-8')
         s.send(op_id + header + file_hash.encode('utf-8'))
         
-        while True:
-            try:
-                return receive_op_id(s) == FILE_CORRECT
-            except BlockingIOError:
-                continue
+        response = int(s.recv(HEADER_LENGTH).decode('utf-8').strip())
+        print(response == FILE_CORRECT)
+        if response == FILE_CORRECT:
+            return True
+        elif response == FILE_INCORRECT:
+            print("updating file")
+            f = open(f"{os.getcwd()}/messages.json", "w")
+            file_length = s.recv(HEADER_LENGTH)
+            f.write(s.recv(int(file_length.decode('utf-8').strip())).decode('utf-8'))
+            f.close()
+        s.setblocking(False)
 
 
     def update_file(self, s: socket.socket):

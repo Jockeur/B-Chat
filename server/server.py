@@ -3,6 +3,7 @@ import os
 import select
 import socket
 import utils
+import hashlib
 
 from slogging import log
 from utils import SENDING_MESSAGE, ACCESS_DENIED, ACCESS_GRANTED, HEADER_LENGTH, receive_op_id, get_message
@@ -56,17 +57,16 @@ class Server():
                     match operation_id:
                         case False:
                             log(f"Connection fermée de {self.clients[notified_socket]['username'].decode('utf-8')}")
-                            self.socket_list.remove(notified_socket)
-                            del self.clients[notified_socket]
+                            self.delete_client(notified_socket)
                         case utils.SENDING_MESSAGE:
                             self.process_message(notified_socket)
                         case utils.CHECK_FILE:
+                            print("Check file")
                             self.check_file(notified_socket)
                             
             # On peut maintenant s'occuper des sockets en erreur (les connards qui se sont déconectés)
             for notified_socket in error_sockets:
-                self.socket_list.remove(notified_socket)
-                del self.clients[notified_socket]
+                self.delete_client(notified_socket)
 
         
     def process_message(self, s: socket.socket):
@@ -74,14 +74,14 @@ class Server():
         # On vérifie d'abord que le client ne se soit pas déconnecté
         if message_infos == False:
             log(f"Connection fermée de {self.clients[s]['data'].decode('utf-8')}")
-            self.socket_list.remove(s)
-            del self.clients[s]
+            self.delete_client(s)
 
             return
                     
         username = message_infos['username']
         message = message_infos['message']
         log(f"Message reçu de {username['data'].decode('utf-8')}: {message['data'].decode('utf-8').strip()}")
+        self.register_message(username, message)
                     
         # Le renvoyer à tout le monde
         for client in self.clients:
@@ -119,5 +119,39 @@ class Server():
         op_header = f"{ACCESS_DENIED:<{HEADER_LENGTH}}".encode('utf-8')
         s.sendall(op_header)
         return (False, username)
+    
+    
+    # On peut vérifier si les deux fichier correspondent grâce à un hash de ces derniers
+    def check_file(self, s: socket.socket):
+        s.setblocking(True)
+        hash_header = s.recv(HEADER_LENGTH)
+        if not hash_header:
+            self.delete_client(s)
+        
+        # Hash du fichier envoyé par le client
+        file_hash = s.recv(int(hash_header.decode("utf-8").strip()))
+        log(f"Hash reçu de {self.clients[s]['username'].decode('utf-8')}: {file_hash.decode('utf-8').strip()}")
+        # Hash du server
+        og_file_hash = hashlib.md5(open(f'{os.getcwd()}/messages.json', 'r').read().encode('utf-8')).hexdigest()
+        if og_file_hash == file_hash.decode('utf-8'):
+            op_header = f"{utils.FILE_CORRECT:<{HEADER_LENGTH}}".encode('utf-8')
+            s.sendall(op_header)
+        else:
+            op_header = f"{utils.FILE_INCORRECT:<{HEADER_LENGTH}}".encode('utf-8')
+            s.sendall(op_header)
+            # On envoie le fichier
+            with open(f'{os.getcwd()}/messages.json', 'r') as f:
+                message = f.read()
+                message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
+                s.sendall(message_header)
+                s.sendall(message.encode('utf-8'))
+                f.close()
+        s.setblocking(False)
+        
+    
+    def delete_client(self, s: socket.socket):
+        self.socket_list.remove(s)
+        del self.clients[s]
+            
         
 Server()
