@@ -3,6 +3,7 @@ import sys, socket, hashlib
 import errno
 
 from threading import Thread
+import time
 
 from slogging import log
 from utils import *
@@ -15,6 +16,8 @@ class Client():
         self.i_password = app.password
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.app = app
+
+        self.paused = False
         
         self.socket.connect((IP, PORT))
         self.socket.setblocking(False)
@@ -29,6 +32,9 @@ class Client():
     def receive_message(self):
         '''Une boucle vérifiant que l'utilisateur est toujours connecté et enregistre un message si jamais il en a reçu un'''
         while self.app.running:
+            while self.paused:
+                time.sleep(0.1)
+                print("waiting for file to be updated")
             try:
                 # On essaye de voir si on reçoit un message
                 # Nos messages commencerons toujours par l'operation ID pour savoir quelle opération effectuer
@@ -111,6 +117,8 @@ class Client():
 
     
     def check_file(self, s: socket.socket):
+        self.paused = True
+        print("paused")
         print("Check file")
         s.setblocking(True)
         file = open(f'{os.getcwd()}/messages.json', 'r')
@@ -130,6 +138,7 @@ class Client():
             file_length = s.recv(HEADER_LENGTH)
             f.write(s.recv(int(file_length.decode('utf-8').strip())).decode('utf-8'))
             f.close()
+        self.paused = False
         s.setblocking(False)
 
 

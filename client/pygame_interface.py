@@ -21,6 +21,18 @@ class App():
         self.typingOn=False
         self.brightTheme=True
         self.LETTER_timer = 0
+        self.colors = {
+            "background": pygame.Color(183, 188, 189),
+            "text": pygame.Color(0, 0, 0),
+            "bubble": pygame.Color(128, 140, 144),
+            "bubble_sender": pygame.Color(36, 175, 227),
+            "top_bar": pygame.Color(129, 134, 135),
+            "top_bar_text": pygame.Color(255, 255, 255),
+            "contact_list": pygame.Color(0, 0, 0),
+            "contact_list_text": pygame.Color(255, 255, 255),
+            "typing_area": pygame.Color(36, 175, 227),
+            "typing_area_text": pygame.Color(0, 0, 0),
+            "typing_area_border": pygame.Color(0, 0, 0),}
 
         self.scroll = 0
 
@@ -77,7 +89,7 @@ class App():
 
         # Render the typing area
         type_area = pygame.Rect(0, self.message_surface.get_height() - type_area_height, self.message_surface.get_width(), type_area_height)
-        pygame.draw.rect(self.message_surface, pygame.Color(36, 175, 227), type_area, border_radius=15)
+        pygame.draw.rect(self.message_surface, self.colors['bubble_sender'], type_area, border_radius=15)
 
         # Rendering the message that the user is curently typing
         for j in range(len(message_fit)):
@@ -120,7 +132,7 @@ class App():
             message_bubble = pygame.Rect(bubble_x, self.message_surface.get_height() - y_bubble, message_width + message_offset*2, bubble_height)
 
             # Render the bubble
-            bubble_color = pygame.Color(128, 140, 144) if self.username != self.messages[str(i)]["sender"] else pygame.Color(36, 175, 227)
+            bubble_color = self.colors['bubble'] if self.username != self.messages[str(i)]["sender"] else self.colors['bubble_sender']
             pygame.draw.rect(self.message_surface, bubble_color, message_bubble, border_radius=15)
             
             # Render each line of the message
@@ -140,6 +152,8 @@ class App():
 
         # Render the contact list
         pygame.draw.line(self.screen, (0, 0, 0), (self.contact_surface.get_width(), 0), (self.contact_surface.get_width(), self.screen.get_height()))
+
+
 
         pygame.display.flip()
         self.clock.tick(60)
