@@ -89,7 +89,7 @@ class App():
         
 
         ## Render all the messages
-        for i in range(len(self.messages)):
+        for i in range(len(self.messages) - self.scroll):
             message_offset = 10
 
             message = self.messages[str(i)]["message"]

@@ -64,7 +64,7 @@ class Server():
                             print("Check file")
                             self.check_file(notified_socket)
                             
-            # On peut maintenant s'occuper des sockets en erreur (les connards qui se sont déconectés)
+            # On peut maintenant s'occuper des sockets en erreur (les sockets qui se sont déconectés)
             for notified_socket in error_sockets:
                 self.delete_client(notified_socket)
 
@@ -81,7 +81,17 @@ class Server():
         username = message_infos['username']
         message = message_infos['message']
         log(f"Message reçu de {username['data'].decode('utf-8')}: {message['data'].decode('utf-8').strip()}")
-        self.register_message(username, message)
+        
+        with open(f'{os.getcwd()}/messages.json', 'r+') as file:
+            file.seek(0)
+            data = json.load(file)
+            m_id = str(len(list(data.values())))
+            data[m_id] = {}
+            data[m_id]["sender"] = username['data'].decode('utf-8')
+            data[m_id]["message"] = message['data'].decode('utf-8').strip()
+            file.seek(0)
+            json.dump(data, file, indent=4)
+            file.truncate()
                     
         # Le renvoyer à tout le monde
         for client in self.clients:
@@ -143,6 +153,7 @@ class Server():
             with open(f'{os.getcwd()}/messages.json', 'r') as f:
                 message = f.read()
                 message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
+                print(message_header)
                 s.sendall(message_header)
                 s.sendall(message.encode('utf-8'))
                 f.close()

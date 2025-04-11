@@ -72,10 +72,11 @@ class Client():
     def process_message(self, s: socket.socket):
         message = get_message(s)        
         self.app.register_message(message['username']['data'].decode('utf-8').strip(), message['message']['data'].decode('utf-8').strip())
+        self.check_file(s)
 
 
     def send_message(self, message):
-        # ki ki l'a envoyé
+        # ki ki l'a envoyé ?
         username_header = f"{len(self.i_username):<{HEADER_LENGTH}}".encode('utf-8')
         username = self.i_username.encode('utf-8')
         
@@ -85,6 +86,7 @@ class Client():
         op_header = f"{SENDING_MESSAGE:<{HEADER_LENGTH}}".encode('utf-8')
         # On envoie le tout au serveur
         self.socket.send(op_header + username_header + username + message_header + message)
+        self.check_file(self.socket)
         
 
     def send_username(self):
@@ -119,7 +121,7 @@ class Client():
         s.send(op_id + header + file_hash.encode('utf-8'))
         
         response = int(s.recv(HEADER_LENGTH).decode('utf-8').strip())
-        print(response == FILE_CORRECT)
+        print(response)
         if response == FILE_CORRECT:
             return True
         elif response == FILE_INCORRECT:
