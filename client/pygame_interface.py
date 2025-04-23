@@ -19,6 +19,7 @@ class App():
         
         self.room = "Groupe général de discussion"
         self.messages={}
+        self.contacts = {}
         self.message=""
         self.contact_search=""
         self.typingOn=False
@@ -111,7 +112,7 @@ class App():
         
         ## Render the bar to type the message
         if self.selected_surface == 'message_surface' and time.time()%1 > 0.5:
-            bar = pygame.Rect(10 + self.font.size(message_fit[-1])[0], self.message_surface.get_height() - 35, 5, 25)
+            bar = pygame.Rect(10 + self.font.size(message_fit[-1])[0], self.message_surface.get_height() - 35, 3, 25)
             pygame.draw.rect(self.message_surface, self.colors['typing_area_text'], bar)
 
         # Rendering the message that the user is curently typing
@@ -188,8 +189,36 @@ class App():
         self.contact_surface.blit(search_text, (search_bar.x + 10, search_bar.y + 10))
         ## Render the bar to type the username
         if self.selected_surface == 'contact_surface' and time.time()%1 > 0.5:
-            bar = pygame.Rect(search_bar.x + 10 + self.font.size(self.contact_search)[0], search_bar.y + 10, 5, 25)
+            bar = pygame.Rect(search_bar.x + 10 + self.font.size(self.contact_search)[0], search_bar.y + 10, 3, 25)
             pygame.draw.rect(self.contact_surface, self.colors['typing_area_text'], bar)
+
+        # Render the contact list
+        contact_list = []
+        if self.contact_search != "":
+            for i in range(len(self.contacts)):
+                if self.contact_search.lower() in self.contacts[str(i)]['username'].lower():
+                    contact_list.append(self.contacts[str(i)])
+        else:
+            for i in range(len(self.contacts)):
+                contact_list.append(self.contacts[str(i)])
+        print(contact_list) # Convert to dict format
+        contact_list = contact_list[:10]  # Limit to 10 contacts for display
+
+        for contact in contact_list:
+            contact_rect = pygame.Rect(10, 120 + contact_list.index(contact) * 60, self.contact_surface.get_width() - 20, 50)
+            pygame.draw.rect(self.contact_surface, (255, 255, 255), contact_rect, border_radius=15)
+            pygame.draw.rect(self.contact_surface, (0, 0, 0), contact_rect, 2, border_radius=15)
+            contact_name = self.font.render(contact['username'], True, "black")
+            self.contact_surface.blit(contact_name, (contact_rect.x + 10, contact_rect.y + 10))
+            # Check if the contact is hovered
+            if contact_rect.collidepoint(mouse_x, mouse_y):
+                pygame.draw.rect(self.contact_surface, (35, 149, 73), contact_rect, border_radius=15)
+                contact_name = self.font.render(contact['username'], True, "white")
+                self.contact_surface.blit(contact_name, (contact_rect.x + 10, contact_rect.y + 10))
+                # if pygame.mouse.get_pressed()[0]:
+                #     self.client.select_contact(contact['username'])
+                #     self.contact_search = ""
+
 
         # Render add contact button
         add_contact_rect = pygame.Rect(10, self.contact_surface.get_height() - 60, 50, 50)
@@ -268,7 +297,9 @@ class App():
             if result:
                 logged = True
                 break
-            
+        with open(f"{os.getcwd()}/contacts.json", 'r') as file:
+            self.contacts = json.load(file)
+            file.close()
     
     ## Fonction principale
     def run(self):

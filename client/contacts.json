@@ -1,0 +1,14 @@
+{
+    "0": {
+        "username": "John",
+        "id": "0"
+    },
+    "1": {
+        "username": "Jane",
+        "id": "1"
+    },
+    "2": {
+        "username": "Bob",
+        "id": "2"
+    }
+}
