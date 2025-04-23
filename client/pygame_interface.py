@@ -1,3 +1,4 @@
+import time
 import pygame
 import json
 import sys
@@ -14,10 +15,12 @@ class App():
         self.message_surface = None
         self.clock = pygame.time.Clock()
         self.running = True
+        self.selected_surface = 'message_surface'
         
         self.room = "Groupe général de discussion"
         self.messages={}
         self.message=""
+        self.contact_search=""
         self.typingOn=False
         self.brightTheme=True
         self.LETTER_timer = 0
@@ -52,18 +55,29 @@ class App():
             elif event.type == pygame.KEYDOWN:
                 # if it's a backspace
                 if event.key == pygame.K_BACKSPACE:
-                    # remove the last character
-                    self.message = self.message[:-1]
+                    if self.selected_surface == 'message_surface':
+                        self.message = self.message[:-1]
+                    elif self.selected_surface == 'contact_surface':
+                        self.contact_search = self.contact_search[:-1]
                 elif event.key != pygame.K_RETURN and event.key != pygame.K_CARET:
                     # if it's not include the character typed in the message (except for the special characters such as ^ or ENTER)
-                    self.message += event.unicode
+                    if self.selected_surface == 'message_surface':
+                        if event.unicode != "":
+                            self.message += event.unicode
+                    elif self.selected_surface == 'contact_surface':
+                        if event.unicode != "":
+                            self.contact_search += event.unicode
                 elif event.key == pygame.K_RETURN and self.message != "":
-                    # Send the message to the server
-                    self.client.send_message(self.message.strip())
+                    # if the user is typing a message and press ENTER
+                    if self.selected_surface == 'message_surface':
+                        # Send the message to the server
+                        self.client.send_message(self.message.strip())
 
-                    # Register the message localy
-                    self.register_message(self.username, self.message.strip())
-                    self.message = ""
+                        # Register the message localy
+                        self.register_message(self.username, self.message.strip())
+                        self.message = ""
+                    else:
+                        pass
             elif event.type == pygame.MOUSEWHEEL:
                 if self.scroll + event.y >= 0 and self.scroll + event.y <= len(self.messages.values()):
                     self.scroll += event.y
@@ -72,13 +86,17 @@ class App():
         self.update_messages()
     
     def draw(self):
-        self.screen.fill((183,188,189))
+        # Clear the screen
+        self.screen.fill(self.colors['background'])
 
-        # RENDER YOUR GAME HERE
+        # get the mouse position
+        mouse_x, mouse_y = pygame.mouse.get_pos()
 
         # Render the subsurfaces
         self.contact_surface = self.screen.subsurface((0, 0, self.screen.get_width()/5, self.screen.get_height()))
         self.message_surface = self.screen.subsurface((self.screen.get_width()/5, 0, self.screen.get_width()/5*4, self.screen.get_height()))
+
+        # RENDER YOUR GAME HERE
 
         ## Render user interaction
         message_fit = self.fit_text(self.message, self.message_surface.get_width() - 20)
@@ -90,6 +108,11 @@ class App():
         # Render the typing area
         type_area = pygame.Rect(0, self.message_surface.get_height() - type_area_height, self.message_surface.get_width(), type_area_height)
         pygame.draw.rect(self.message_surface, self.colors['bubble_sender'], type_area, border_radius=15)
+        
+        ## Render the bar to type the message
+        if self.selected_surface == 'message_surface' and time.time()%1 > 0.5:
+            bar = pygame.Rect(10 + self.font.size(message_fit[-1])[0], self.message_surface.get_height() - 35, 5, 25)
+            pygame.draw.rect(self.message_surface, self.colors['typing_area_text'], bar)
 
         # Rendering the message that the user is curently typing
         for j in range(len(message_fit)):
@@ -153,7 +176,43 @@ class App():
         # Render the contact list
         pygame.draw.line(self.screen, (0, 0, 0), (self.contact_surface.get_width(), 0), (self.contact_surface.get_width(), self.screen.get_height()))
 
+        # Title
+        title = self.font.render("Contacts", True, "black")
+        self.contact_surface.blit(title, (10, 10))
 
+        # Search bar
+        search_bar = pygame.Rect(10, 60, self.contact_surface.get_width() - 20, 50)
+        pygame.draw.rect(self.contact_surface, (255, 255, 255), search_bar, border_radius=15)
+        pygame.draw.rect(self.contact_surface, (0, 0, 0), search_bar, 2, border_radius=15)
+        search_text = self.font.render(self.contact_search, True, "black")
+        self.contact_surface.blit(search_text, (search_bar.x + 10, search_bar.y + 10))
+        ## Render the bar to type the username
+        if self.selected_surface == 'contact_surface' and time.time()%1 > 0.5:
+            bar = pygame.Rect(search_bar.x + 10 + self.font.size(self.contact_search)[0], search_bar.y + 10, 5, 25)
+            pygame.draw.rect(self.contact_surface, self.colors['typing_area_text'], bar)
+
+        # Render add contact button
+        add_contact_rect = pygame.Rect(10, self.contact_surface.get_height() - 60, 50, 50)
+        pygame.draw.rect(self.contact_surface, (35, 149, 73) if 10 <= mouse_x <= 60 and
+                         self.contact_surface.get_height() - 60 <= mouse_y <= self.contact_surface.get_height() - 10 else (51, 255, 119), add_contact_rect, border_radius=15)
+        add_contact = pygame.image.load(f"{os.getcwd()}/img/add_contact.png").convert_alpha()
+        self.contact_surface.blit(add_contact, (add_contact_rect.x, add_contact_rect.y))
+
+
+        # Render the mouse cursor
+        if mouse_x >= self.contact_surface.get_width() and mouse_x <= self.message_surface.get_width() and mouse_y >= self.message_surface.get_height() - type_area_height and mouse_y <= self.message_surface.get_height():
+            pygame.draw.rect(self.message_surface, self.colors['typing_area_border'], type_area, 2, border_radius=15)
+            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_IBEAM)
+            if self.selected_surface != 'message_surface' and pygame.mouse.get_pressed()[0]:
+                self.selected_surface = 'message_surface'
+        elif 10 <= mouse_x <= self.contact_surface.get_width() - 20 and 60 <= mouse_y <= 110:
+            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_IBEAM)
+            if self.selected_surface != 'contact_surface' and pygame.mouse.get_pressed()[0]:
+                self.selected_surface = 'contact_surface'
+        elif 10 <= mouse_x <= 60 and self.contact_surface.get_height() - 60 <= mouse_y <= self.contact_surface.get_height() - 10:
+            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
+        else:
+            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
 
         pygame.display.flip()
         self.clock.tick(60)
