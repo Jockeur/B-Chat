@@ -34,12 +34,10 @@ class Client():
         while self.app.running:
             while self.paused:
                 time.sleep(0.1)
-                print("waiting for file to be updated")
             try:
                 # On essaye de voir si on reçoit un message
                 # Nos messages commencerons toujours par l'operation ID pour savoir quelle opération effectuer
                 operation_id = receive_op_id(self.socket)
-                print('Op id : ' + str(operation_id))
                     
                 # Sinon c'est qu'on a quelque chose !
                 # Alors on effectue l'opération adéquate
@@ -118,8 +116,6 @@ class Client():
     
     def check_file(self, s: socket.socket):
         self.paused = True
-        print("paused")
-        print("Check file")
         s.setblocking(True)
         file = open(f'{os.getcwd()}/messages.json', 'r')
         file_hash = hashlib.md5(file.read().encode('utf-8')).hexdigest()
@@ -129,11 +125,9 @@ class Client():
         s.send(op_id + header + file_hash.encode('utf-8'))
         
         response = int(s.recv(HEADER_LENGTH).decode('utf-8').strip())
-        print(response)
         if response == FILE_CORRECT:
-            return True
+            pass
         elif response == FILE_INCORRECT:
-            print("updating file")
             f = open(f"{os.getcwd()}/messages.json", "w")
             file_length = s.recv(HEADER_LENGTH)
             f.write(s.recv(int(file_length.decode('utf-8').strip())).decode('utf-8'))
