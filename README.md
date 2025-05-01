@@ -19,3 +19,7 @@ Le nom vient d’une origine simple, le désir d’avoir une plateforme unique q
 * Système d’état du message (En attente d’envoi, Reçu, Lu)
 * Système de réponse à un message spécifique *(Optionnel)*
 * Système d’envoi par différents protocoles *(Optionnel)*
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Pour installer cette partie Bluetooth du projet il suffit d'avoir Windows (Peut peut-etre fonctionner sur Linux Ubuntu avec la couche de compatibilté wine mais c'est pas assuré que ça marche bien) et télecharger le fichier .exe puis le double clicker et attendre, ensuite ça ne fonctionnera pas tout de suite il faudra d'abor cliquer sur la touche Windows puis chercher l'application qui vient d'être installer Visual Studio Tools, l'ouvrir et installer le pack C++, puis vous pourrez ouvrir l'app et ça marchera.
