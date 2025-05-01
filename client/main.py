@@ -2,7 +2,6 @@ import time
 import pygame
 import json
 import sys
-import os
 from client import Client
 
 class App():

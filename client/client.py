@@ -1,4 +1,3 @@
-import os
 import sys, socket, hashlib
 import errno
 
@@ -79,20 +78,6 @@ class Client():
         message = get_message(s)        
         self.app.register_message(message['username']['data'].decode('utf-8').strip(), message['message']['data'].decode('utf-8').strip())
         self.check_file(s)
-
-
-    # def send_message(self, message):
-    #     # ki ki l'a envoyé ?
-    #     username_header = f"{len(self.i_username):<{HEADER_LENGTH}}".encode('utf-8')
-    #     username = self.i_username.encode('utf-8')
-        
-    #     message = message.encode('utf-8')
-    #     # On détermine son header (la taille du message en gros)
-    #     message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
-    #     op_header = f"{SENDING_MESSAGE:<{HEADER_LENGTH}}".encode('utf-8')
-    #     # On envoie le tout au serveur
-    #     self.socket.send(op_header + username_header + username + message_header + message)
-    #     self.check_file(self.socket)
 
     def send_message(self, message, contact_id: int):
         # Qui l'a envoyé ?
