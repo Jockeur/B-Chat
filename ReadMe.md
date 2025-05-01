@@ -46,6 +46,7 @@ Une fois que vous aurez fini avec l'application vous voudrez certainement l'arr�
 ### Application
 Afin d'arrêter l'application il vous suffit d'appuyer sur la croix en haut à droite ou d'utiliser la combinaison Alt + F4 comme toute application.
 
+### Serveur
 Pour arrêter le serveur, il vous suffira de fermer le terminal dans lequel ce dernier s'éxécute.
 
 
@@ -53,11 +54,9 @@ Pour arrêter le serveur, il vous suffira de fermer le terminal dans lequel ce d
 
 Une fois l'application lancée, une interface apparait vous demandant d'entrer un pseudonyme.
 Les seuls utilisateurs disponible sont
-- Pseudo: John
-  Mot de passe: test
+- Pseudo: John <br>Mot de passe: test
 
-- Pseudo: Jane
-  Mot de passe: test
+- Pseudo: Jane <br>Mot de passe: test
 
 Une fois connecté, l'interface principale s'affiche.
 Il y a à gauche une liste de contact avec une barre de recherche. Vous pouvez cliquer sur l'un d'entre eux afin d'afficher la discussion avec ce dernier
