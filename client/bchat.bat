@@ -1,1 +1,1 @@
-python %~dp0/pygame_interface.py
+python %~dp0/main.py
