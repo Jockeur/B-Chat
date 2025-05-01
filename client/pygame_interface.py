@@ -74,9 +74,9 @@ class App():
                     if self.selected_surface == 'message_surface' and self.choosen_contact != None:
                         # Send the message to the server
                         self.client.send_message(self.message.strip(), self.choosen_contact)
-
-                        # Register the message localy
-                        self.register_message(self.username, self.message.strip())
+                        # Register the message in the local file
+                        self.client.update_file(self.client.socket)
+                        
                         self.message = ""
                     else:
                         pass
@@ -150,7 +150,7 @@ class App():
                             bubble_height += message_offset + self.font.size(line)[1]
                         else:
                             y_bubble += message_offset + self.font.size(line)[1]
-                bubble_x = 10 if self.messages[str(i)]["sender"] == 1 else self.message_surface.get_width() - message_width - 3*message_offset
+                bubble_x = 10 if self.messages[str(i)]["sender"] == 0 else self.message_surface.get_width() - message_width - 3*message_offset
 
                 y_bubble += bubble_height
 
