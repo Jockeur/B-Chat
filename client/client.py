@@ -43,6 +43,8 @@ class Client():
                 # Alors on effectue l'opération adéquate
                 if operation_id == SENDING_MESSAGE:
                     self.process_message(self.socket)
+                elif operation_id == UPDATE_FILE:
+                    self.update_file(self.socket)
                 # Si on ne reçoit rien, c'est que la connection a été fermée (socket.close() ou socket.shutdown(socket.SHUT_RDWR))
                 elif operation_id == False:
                     log('Connection fermée par le serveur')
@@ -79,17 +81,34 @@ class Client():
         self.check_file(s)
 
 
-    def send_message(self, message):
-        # ki ki l'a envoyé ?
+    # def send_message(self, message):
+    #     # ki ki l'a envoyé ?
+    #     username_header = f"{len(self.i_username):<{HEADER_LENGTH}}".encode('utf-8')
+    #     username = self.i_username.encode('utf-8')
+        
+    #     message = message.encode('utf-8')
+    #     # On détermine son header (la taille du message en gros)
+    #     message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
+    #     op_header = f"{SENDING_MESSAGE:<{HEADER_LENGTH}}".encode('utf-8')
+    #     # On envoie le tout au serveur
+    #     self.socket.send(op_header + username_header + username + message_header + message)
+    #     self.check_file(self.socket)
+
+    def send_message(self, message, contact_id: int):
+        # Qui l'a envoyé ?
         username_header = f"{len(self.i_username):<{HEADER_LENGTH}}".encode('utf-8')
         username = self.i_username.encode('utf-8')
-        
+
+        # à qui ?
+        contact_id_header = f"{len(str(contact_id)):<{HEADER_LENGTH}}".encode('utf-8')
+        contact_id = str(contact_id).encode('utf-8')
+
         message = message.encode('utf-8')
         # On détermine son header (la taille du message en gros)
         message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
         op_header = f"{SENDING_MESSAGE:<{HEADER_LENGTH}}".encode('utf-8')
         # On envoie le tout au serveur
-        self.socket.send(op_header + username_header + username + message_header + message)
+        self.socket.send(op_header + username_header + username + contact_id_header + contact_id + message_header + message)
         self.check_file(self.socket)
         
 
@@ -117,7 +136,7 @@ class Client():
     def check_file(self, s: socket.socket):
         self.paused = True
         s.setblocking(True)
-        file = open(f'{os.getcwd()}/messages.json', 'r')
+        file = open(f'./contacts.json', 'r')
         file_hash = hashlib.md5(file.read().encode('utf-8')).hexdigest()
 
         op_id = f"{CHECK_FILE:<{HEADER_LENGTH}}".encode('utf-8')
@@ -128,7 +147,7 @@ class Client():
         if response == FILE_CORRECT:
             pass
         elif response == FILE_INCORRECT:
-            f = open(f"{os.getcwd()}/messages.json", "w")
+            f = open(f"./contacts.json", "w")
             file_length = s.recv(HEADER_LENGTH)
             f.write(s.recv(int(file_length.decode('utf-8').strip())).decode('utf-8'))
             f.close()
@@ -137,11 +156,16 @@ class Client():
 
 
     def update_file(self, s: socket.socket):
+        self.paused = True
+        s.setblocking(True)
         op_id = f"{UPDATE_FILE:<{HEADER_LENGTH}}".encode('utf-8')
         s.send(op_id)
 
-        l = s.recv(HEADER_LENGTH)
-        length = int(l.decode('utf-8').strip())
-        data = s.recv(length)
-        with open(f'{os.getcwd}/message_client.json', 'w') as f:
-            f.write(data.decode('utf-8'))
+        f = open(f"./contacts.json", "w")
+        file_length = s.recv(HEADER_LENGTH)
+        f.write(s.recv(int(file_length.decode('utf-8').strip())).decode('utf-8'))
+        f.close()
+
+        self.app.update_messages()
+        s.setblocking(False)
+        self.paused = False

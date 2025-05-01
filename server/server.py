@@ -6,7 +6,7 @@ import utils
 import hashlib
 
 from slogging import log
-from utils import SENDING_MESSAGE, ACCESS_DENIED, ACCESS_GRANTED, HEADER_LENGTH, receive_op_id, get_message
+from utils import SENDING_MESSAGE, ACCESS_DENIED, ACCESS_GRANTED, HEADER_LENGTH, UPDATE_FILE, receive_op_id, get_message
 class Server():
     def __init__(self):
         # L'addresse et le port de connexion du serveur
@@ -17,7 +17,7 @@ class Server():
         
         # La liste de tous les socket_list connectés à notre serveur
         self.socket_list = []
-        self.clients = {}
+        self.clients = {} # {"socket" : {"address": (ip, port), "username": username, "id": id}}
         self.start()
         
     
@@ -39,12 +39,12 @@ class Server():
                 # Si le socket est notre serveur, c'est qu'un client essaye de se connecter
                 if notified_socket == self.socket:
                     client_socket, client_address = self.socket.accept()
-                    (logging, username) = self.check_login(client_socket)
+                    (logging, username, id) = self.check_login(client_socket)
 
                     if logging:
                         # On ajoute le nouveau client à notre liste de clients
                         self.socket_list.append(client_socket)
-                        self.clients[client_socket] = {'address': client_address, 'username': username['data']}
+                        self.clients[client_socket] = {'address': client_address, 'username': username['data'], 'id': id}
                         log(f"Nouvelle connexion de {client_address}")
                     else:
                         log(f"Connection refusée de {client_address}")
@@ -63,6 +63,8 @@ class Server():
                         case utils.CHECK_FILE:
                             print("Check file")
                             self.check_file(notified_socket)
+                        case utils.UPDATE_FILE:
+                            self.update_file(notified_socket)
                             
             # On peut maintenant s'occuper des sockets en erreur (les sockets qui se sont déconectés)
             for notified_socket in error_sockets:
@@ -80,25 +82,45 @@ class Server():
                     
         username = message_infos['username']
         message = message_infos['message']
-        log(f"Message reçu de {username['data'].decode('utf-8')}: {message['data'].decode('utf-8').strip()}")
+        contact_id = message_infos['contact_id']
+        log(f"Message reçu de {username['data'].decode('utf-8')} pour son contact d'id {contact_id['data'].decode('utf-8')}: {message['data'].decode('utf-8').strip()}")
         
-        with open(f'{os.getcwd()}/messages.json', 'r+') as file:
+        receiver_id = ""
+        with open(f'./contacts{self.clients[s]['id']}.json', 'r+') as file:
             file.seek(0)
             data = json.load(file)
-            m_id = str(len(list(data.values())))
-            data[m_id] = {}
-            data[m_id]["sender"] = username['data'].decode('utf-8')
-            data[m_id]["message"] = message['data'].decode('utf-8').strip()
+            receiver_id = data[contact_id['data'].decode('utf-8')]['id']
+            m_id = str(len(list(data[contact_id['data'].decode('utf-8')]["messages"].values())))
+            data[contact_id['data'].decode('utf-8')]['messages'][m_id] = {}
+            data[contact_id['data'].decode('utf-8')]['messages'][m_id]["sender"] = 1
+            data[contact_id['data'].decode('utf-8')]['messages'][m_id]["message"] = message['data'].decode('utf-8').strip()
             file.seek(0)
             json.dump(data, file, indent=4)
             file.truncate()
-                    
-        # Le renvoyer à tout le monde
+
+        # On envoie le message à l'autre client
+        print(receiver_id)
+        with open(f'./contacts{receiver_id}.json', 'r+') as file:
+            file.seek(0)
+            data = json.load(file)
+            for id in data.values():
+                print(id)
+                print(self.clients[s]['id'])
+                if id['id'] == self.clients[s]['id']:
+                    m_id = str(len(list(id['messages'].values())))
+                    id['messages'][m_id] = {}
+                    id['messages'][m_id]["sender"] = 0
+                    id['messages'][m_id]["message"] = message['data'].decode('utf-8').strip()
+                    break
+            # On enregistre le message dans le fichier json
+            file.seek(0)
+            json.dump(data, file, indent=4)
+            file.truncate()
+        # Si l'utlisateur est connecté, il faut lui faire actualiser son fichier
         for client in self.clients:
-            # Par contre on le renvoit pas à l'envoyeur
-            if client != s:
-                op_header = f"{SENDING_MESSAGE:<{HEADER_LENGTH}}".encode('utf-8')
-                client.sendall(op_header + username['header'] + username['data'] + message['header'] + message['data'])
+            if self.clients[client]['id'] == receiver_id:
+                op_header = f"{UPDATE_FILE:<{HEADER_LENGTH}}".encode('utf-8')
+                client.sendall(op_header)
 
     
     def check_login(self, s: socket.socket):
@@ -118,17 +140,17 @@ class Server():
         # On vérifie dans notre DB si le client est bien inscrit
         # Nos utilisateurs son stockés dans un fichier json (voir utils.py)
         print(username['data'].decode('utf-8').strip() + " " + password['data'])
-        with open(f'{os.getcwd()}/users.json', 'r') as file:
+        with open(f'./users.json', 'r') as file:
             users = json.load(file)
             for id in users:
                 if users[id]['username'] == username['data'].decode('utf-8').strip() and users[id]['password'] == password['data']:
                     op_header = f"{ACCESS_GRANTED:<{HEADER_LENGTH}}".encode('utf-8')
                     s.sendall(op_header)
-                    return (True, username)
+                    return (True, username, id)
         # Si on arrive ici, c'est que le client n'est pas inscrit
         op_header = f"{ACCESS_DENIED:<{HEADER_LENGTH}}".encode('utf-8')
         s.sendall(op_header)
-        return (False, username)
+        return (False, username, None)
     
     
     # On peut vérifier si les deux fichier correspondent grâce à un hash de ces derniers
@@ -142,7 +164,7 @@ class Server():
         file_hash = s.recv(int(hash_header.decode("utf-8").strip()))
         log(f"Hash reçu de {self.clients[s]['username'].decode('utf-8')}: {file_hash.decode('utf-8').strip()}")
         # Hash du server
-        og_file_hash = hashlib.md5(open(f'{os.getcwd()}/messages.json', 'r').read().encode('utf-8')).hexdigest()
+        og_file_hash = hashlib.md5(open(f'./contacts{self.clients[s]['id']}.json', 'r').read().encode('utf-8')).hexdigest()
         if og_file_hash == file_hash.decode('utf-8'):
             op_header = f"{utils.FILE_CORRECT:<{HEADER_LENGTH}}".encode('utf-8')
             s.sendall(op_header)
@@ -150,7 +172,7 @@ class Server():
             op_header = f"{utils.FILE_INCORRECT:<{HEADER_LENGTH}}".encode('utf-8')
             s.sendall(op_header)
             # On envoie le fichier
-            with open(f'{os.getcwd()}/messages.json', 'r') as f:
+            with open(f'./contacts{self.clients[s]['id']}.json', 'r') as f:
                 message = f.read()
                 message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
                 print(message_header)
@@ -158,7 +180,20 @@ class Server():
                 s.sendall(message.encode('utf-8'))
                 f.close()
         s.setblocking(False)
-        
+    
+
+    def update_file(self, s: socket.socket):
+        # On envoie le fichier
+        s.setblocking(True)
+        with open(f'./contacts{self.clients[s]['id']}.json', 'r') as f:
+            message = f.read()
+            message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
+            print(message_header)
+            s.sendall(message_header)
+            s.sendall(message.encode('utf-8'))
+            f.close()
+        s.setblocking(False)
+
     
     def delete_client(self, s: socket.socket):
         self.socket_list.remove(s)

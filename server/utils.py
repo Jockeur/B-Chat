@@ -34,6 +34,11 @@ def get_message(s: socket.socket):
             username_length = int(username_header.decode('utf-8').strip())
             username = s.recv(username_length)
 
+            contact_id_header = s.recv(HEADER_LENGTH)
+            if not len(contact_id_header):
+                return False
+            contact_id = s.recv(int(contact_id_header.decode('utf-8').strip()))
+
             message_header = s.recv(HEADER_LENGTH)
 
             if not len(message_header):
@@ -42,7 +47,7 @@ def get_message(s: socket.socket):
             message_length = int(message_header.decode('utf-8').strip())
             message = s.recv(message_length)
 
-            return {'username': {'header': username_header, 'data': username},'message': {'header': message_header, 'data': message}}
+            return {'username': {'header': username_header, 'data': username},'message': {'header': message_header, 'data': message}, 'contact_id': {'header': contact_id_header, 'data': contact_id}}
 
         except:
             return False

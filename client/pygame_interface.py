@@ -37,6 +37,7 @@ class App():
             "typing_area": pygame.Color(36, 175, 227),
             "typing_area_text": pygame.Color(0, 0, 0),
             "typing_area_border": pygame.Color(0, 0, 0),}
+        self.choosen_contact = None
 
         self.scroll = 0
 
@@ -56,23 +57,23 @@ class App():
             elif event.type == pygame.KEYDOWN:
                 # if it's a backspace
                 if event.key == pygame.K_BACKSPACE:
-                    if self.selected_surface == 'message_surface':
+                    if self.selected_surface == 'message_surface' and self.choosen_contact != None:
                         self.message = self.message[:-1]
                     elif self.selected_surface == 'contact_surface':
                         self.contact_search = self.contact_search[:-1]
                 elif event.key != pygame.K_RETURN and event.key != pygame.K_CARET:
                     # if it's not include the character typed in the message (except for the special characters such as ^ or ENTER)
-                    if self.selected_surface == 'message_surface':
+                    if self.selected_surface == 'message_surface' and self.choosen_contact != None:
                         if event.unicode != "":
                             self.message += event.unicode
                     elif self.selected_surface == 'contact_surface':
                         if event.unicode != "":
                             self.contact_search += event.unicode
                 elif event.key == pygame.K_RETURN and self.message != "":
-                    # if the user is typing a message and press ENTER
-                    if self.selected_surface == 'message_surface':
+                    # if the user is typing a message and presses ENTER
+                    if self.selected_surface == 'message_surface' and self.choosen_contact != None:
                         # Send the message to the server
-                        self.client.send_message(self.message.strip())
+                        self.client.send_message(self.message.strip(), self.choosen_contact)
 
                         # Register the message localy
                         self.register_message(self.username, self.message.strip())
@@ -84,7 +85,7 @@ class App():
                     self.scroll += event.y
                 
     def update(self):
-        self.update_messages()
+        pass
     
     def draw(self):
         # Clear the screen
@@ -98,74 +99,74 @@ class App():
         self.message_surface = self.screen.subsurface((self.screen.get_width()/5, 0, self.screen.get_width()/5*4, self.screen.get_height()))
 
         # RENDER YOUR GAME HERE
+        if self.choosen_contact != None:
+            ## Render user interaction
+            message_fit = self.fit_text(self.message, self.message_surface.get_width() - 20)
 
-        ## Render user interaction
-        message_fit = self.fit_text(self.message, self.message_surface.get_width() - 20)
+            type_area_height = 10
+            for line in message_fit:
+                type_area_height += self.font.size(line)[1] + 10
 
-        type_area_height = 10
-        for line in message_fit:
-            type_area_height += self.font.size(line)[1] + 10
-
-        # Render the typing area
-        type_area = pygame.Rect(0, self.message_surface.get_height() - type_area_height, self.message_surface.get_width(), type_area_height)
-        pygame.draw.rect(self.message_surface, self.colors['bubble_sender'], type_area, border_radius=15)
-        
-        ## Render the bar to type the message
-        if self.selected_surface == 'message_surface' and time.time()%1 > 0.5:
-            bar = pygame.Rect(10 + self.font.size(message_fit[-1])[0], self.message_surface.get_height() - 35, 3, 25)
-            pygame.draw.rect(self.message_surface, self.colors['typing_area_text'], bar)
-
-        # Rendering the message that the user is curently typing
-        for j in range(len(message_fit)):
-            text_height = 10
-            typing_surface = self.font.render(message_fit[j].strip(), True, "black")
-            for line in message_fit[:j]:
-                text_height += self.font.size(line)[1] + 10
-            self.message_surface.blit(typing_surface, (10, self.message_surface.get_height() - type_area_height + text_height))
-        
-
-        ## Render all the messages
-        for i in range(len(self.messages) - self.scroll):
-            message_offset = 10
-
-            message = self.messages[str(i)]["message"]
-            message_lines = self.fit_text(message, self.message_surface.get_width()/2 - 20)
-            message_width = 0
-
-            # Set the minimal width to fit the entire message
-            for line in message_lines:
-                if self.font.size(line)[0] > message_width:
-                    message_width = self.font.size(line)[0]
-
-            # Calculate the bubble position based on the other's
-            y_bubble = message_offset + type_area_height
-
-            bubble_height = 10
-            for j in range(len(list(self.messages.values())[i:len(self.messages.values()) - self.scroll])):
-                message_fit = self.fit_text(self.messages[str(i+j)]["message"], self.message_surface.get_width()/2 - 20)
-                y_bubble = y_bubble + 20 if j > 0 else y_bubble
-                for line in message_fit:
-                    if j == 0:
-                        bubble_height += message_offset + self.font.size(line)[1]
-                    else:
-                        y_bubble += message_offset + self.font.size(line)[1]
-            bubble_x = 10 if self.messages[str(i)]["sender"] == self.username else self.message_surface.get_width() - message_width - 3*message_offset
-
-            y_bubble += bubble_height
-
-            message_bubble = pygame.Rect(bubble_x, self.message_surface.get_height() - y_bubble, message_width + message_offset*2, bubble_height)
-
-            # Render the bubble
-            bubble_color = self.colors['bubble'] if self.username != self.messages[str(i)]["sender"] else self.colors['bubble_sender']
-            pygame.draw.rect(self.message_surface, bubble_color, message_bubble, border_radius=15)
+            # Render the typing area
+            type_area = pygame.Rect(0, self.message_surface.get_height() - type_area_height, self.message_surface.get_width(), type_area_height)
+            pygame.draw.rect(self.message_surface, self.colors['bubble_sender'], type_area, border_radius=15)
             
-            # Render each line of the message
-            for j in range(len(message_lines)):
+            ## Render the bar to type the message
+            if self.selected_surface == 'message_surface' and time.time()%1 > 0.5:
+                bar = pygame.Rect(10 + self.font.size(message_fit[-1])[0], self.message_surface.get_height() - 35, 3, 25)
+                pygame.draw.rect(self.message_surface, self.colors['typing_area_text'], bar)
+
+            # Rendering the message that the user is curently typing
+            for j in range(len(message_fit)):
                 text_height = 10
-                message_font = self.font.render(message_lines[j].strip(), True, "black")
-                for line in message_lines[:j]:
+                typing_surface = self.font.render(message_fit[j].strip(), True, "black")
+                for line in message_fit[:j]:
                     text_height += self.font.size(line)[1] + 10
-                self.message_surface.blit(message_font, (bubble_x + message_offset, self.message_surface.get_height() - y_bubble + text_height))
+                self.message_surface.blit(typing_surface, (10, self.message_surface.get_height() - type_area_height + text_height))
+            
+
+            ## Render messages
+            for i in range(len(self.messages) - self.scroll):
+                message_offset = 10
+
+                message = self.messages[str(i)]["message"]
+                message_lines = self.fit_text(message, self.message_surface.get_width()/2 - 20)
+                message_width = 0
+
+                # Set the minimal width to fit the entire message
+                for line in message_lines:
+                    if self.font.size(line)[0] > message_width:
+                        message_width = self.font.size(line)[0]
+
+                # Calculate the bubble position based on the other's
+                y_bubble = message_offset + type_area_height
+
+                bubble_height = 10
+                for j in range(len(list(self.messages.values())[i:len(self.messages.values()) - self.scroll])):
+                    message_fit = self.fit_text(self.messages[str(i+j)]["message"], self.message_surface.get_width()/2 - 20)
+                    y_bubble = y_bubble + 20 if j > 0 else y_bubble
+                    for line in message_fit:
+                        if j == 0:
+                            bubble_height += message_offset + self.font.size(line)[1]
+                        else:
+                            y_bubble += message_offset + self.font.size(line)[1]
+                bubble_x = 10 if self.messages[str(i)]["sender"] == 1 else self.message_surface.get_width() - message_width - 3*message_offset
+
+                y_bubble += bubble_height
+
+                message_bubble = pygame.Rect(bubble_x, self.message_surface.get_height() - y_bubble, message_width + message_offset*2, bubble_height)
+
+                # Render the bubble
+                bubble_color = self.colors['bubble'] if self.messages[str(i)]["sender"] == 0 else self.colors['bubble_sender']
+                pygame.draw.rect(self.message_surface, bubble_color, message_bubble, border_radius=15)
+                
+                # Render each line of the message
+                for j in range(len(message_lines)):
+                    text_height = 10
+                    message_font = self.font.render(message_lines[j].strip(), True, "black")
+                    for line in message_lines[:j]:
+                        text_height += self.font.size(line)[1] + 10
+                    self.message_surface.blit(message_font, (bubble_x + message_offset, self.message_surface.get_height() - y_bubble + text_height))
 
         ## Render the top bar with the groupe infos (group name, who's currently typing, etc.)
         top_rect = pygame.Rect(0, 0, self.message_surface.get_width(), 50)
@@ -196,12 +197,12 @@ class App():
         contact_list = []
         if self.contact_search != "":
             for i in range(len(self.contacts)):
-                if self.contact_search.lower() in self.contacts[str(i)]['username'].lower():
+                if self.contact_search.lower() in self.contacts[str(i)]['username'].lower() and self.contacts[str(i)]['username'].lower() != self.username.lower():
                     contact_list.append(self.contacts[str(i)])
         else:
             for i in range(len(self.contacts)):
-                contact_list.append(self.contacts[str(i)])
-        print(contact_list) # Convert to dict format
+                if self.contacts[str(i)]['username'].lower() != self.username.lower():
+                    contact_list.append(self.contacts[str(i)])
         contact_list = contact_list[:10]  # Limit to 10 contacts for display
 
         for contact in contact_list:
@@ -215,21 +216,25 @@ class App():
                 pygame.draw.rect(self.contact_surface, (35, 149, 73), contact_rect, border_radius=15)
                 contact_name = self.font.render(contact['username'], True, "white")
                 self.contact_surface.blit(contact_name, (contact_rect.x + 10, contact_rect.y + 10))
-                # if pygame.mouse.get_pressed()[0]:
-                #     self.client.select_contact(contact['username'])
-                #     self.contact_search = ""
+                if pygame.mouse.get_pressed()[0]:
+                    self.choosen_contact = contact['contact_id']
+                    self.contact_search = ""
+                    self.update_messages()
+                    self.scroll = 0
+                    self.client.update_file(self.client.socket)
 
 
         # Render add contact button
         add_contact_rect = pygame.Rect(10, self.contact_surface.get_height() - 60, 50, 50)
         pygame.draw.rect(self.contact_surface, (35, 149, 73) if 10 <= mouse_x <= 60 and
                          self.contact_surface.get_height() - 60 <= mouse_y <= self.contact_surface.get_height() - 10 else (51, 255, 119), add_contact_rect, border_radius=15)
-        add_contact = pygame.image.load(f"{os.getcwd()}/img/add_contact.png").convert_alpha()
+        add_contact = pygame.image.load(f"./img/add_contact.png").convert_alpha()
         self.contact_surface.blit(add_contact, (add_contact_rect.x, add_contact_rect.y))
 
 
         # Render the mouse cursor
-        if mouse_x >= self.contact_surface.get_width() and mouse_x <= self.message_surface.get_width() and mouse_y >= self.message_surface.get_height() - type_area_height and mouse_y <= self.message_surface.get_height():
+        
+        if self.choosen_contact != None and mouse_x >= self.contact_surface.get_width() and mouse_x <= self.message_surface.get_width() and mouse_y >= self.message_surface.get_height() - type_area_height and mouse_y <= self.message_surface.get_height():
             pygame.draw.rect(self.message_surface, self.colors['typing_area_border'], type_area, 2, border_radius=15)
             pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_IBEAM)
             if self.selected_surface != 'message_surface' and pygame.mouse.get_pressed()[0]:
@@ -297,13 +302,14 @@ class App():
             if result:
                 logged = True
                 break
-        with open(f"{os.getcwd()}/contacts.json", 'r') as file:
-            self.contacts = json.load(file)
-            file.close()
     
     ## Fonction principale
     def run(self):
         self.login()
+        self.client.update_file(self.client.socket)
+        with open(f"./contacts.json", 'r') as file:
+            self.contacts = json.load(file)
+            file.close()
         self.client.main()
         while self.running:
             self.events()
@@ -320,14 +326,19 @@ class App():
         self.save_messages()
     
     def update_messages(self):
-        with open(f"{os.getcwd()}/messages.json", 'r') as file:
-            self.messages = json.load(file)
-            file.close()
+        self.messages = {}
+        if self.choosen_contact != None:
+            with open(f"./contacts.json", 'r') as file:
+                self.messages = json.load(file)[self.choosen_contact]['messages']
+                file.close()
     
     def save_messages(self):
-        with open(f'{os.getcwd()}/messages.json', 'r+') as file:
+        with open(f'./contacts.json', 'r+') as file:
                     file.seek(0)
-                    json.dump(self.messages, file, indent=2)
+                    data = json.load(file)
+                    data[self.choosen_contact]['messages'] = self.messages
+                    file.seek(0)
+                    json.dump(data, file, indent=2)
                     file.truncate()
 
     def fit_text(self, text: str, max_width: int):
